@@ -3,7 +3,7 @@ The Unity object pooling can load and cache all objects inherited from UnityEngi
 
 # Feature
 * Load and cache all objects inherited from `UnityEngine.Object`.
-* Assets and `PoolItem` will auto destroy by `DeleteTime`. If `DeleteTime` is -1, they will not auto destroy.
+* Unused assets and `PoolItem` will auto destroy by `DeleteTime`. If `DeleteTime` is -1, they will not auto destroy.
 * If you cache `GameObject`, you can implement `ISpawnHandler` and `IDisposeHandler` interfaces to listen spawn and dispose actions.
 ```c#
 public interface ISpawnHandler
