@@ -26,7 +26,7 @@ namespace GameUtil
         #endregion
 
         #region PoolKey
-        //实现IEquatable<T>接口，在比较时避免装箱拆箱，产生GC
+        //实现IEquatable<T>接口，避免在比较时装箱拆箱，产生GC
         private struct PoolKey : IEquatable<PoolKey>
         {
             public readonly Type PoolType;
@@ -75,7 +75,7 @@ namespace GameUtil
             // SceneAssetBundle,
         }
 
-        //对象池。类型+名称 => PoolItem
+        //对象池。type + path + load mode => PoolItem
         private readonly Dictionary<PoolKey, PoolItemBase> mPoolItems = new Dictionary<PoolKey, PoolItemBase>();
         //HashSet方便删除
         private readonly HashSet<PoolKey> mPoolKeys = new HashSet<PoolKey>();
