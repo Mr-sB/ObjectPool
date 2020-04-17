@@ -335,7 +335,7 @@ namespace GameUtil
         }
         #endregion
 
-        public void Update()
+        private void Update()
         {
             if (mPoolKeys.Count > 0)
             {
