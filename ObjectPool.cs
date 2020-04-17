@@ -242,6 +242,14 @@ namespace GameUtil
         {
             return GetResources<GameObject>(GetParticlePath(particleName, path, needDefaultPath));
         }
+        
+        /// <summary>
+        /// 获取Material实例对象 目录:Materials/
+        /// </summary>
+        public Material GetMaterial(string materialName, string path = null, bool needDefaultPath = true)
+        {
+            return GetResources<Material>(GetMaterialPath(materialName, path, needDefaultPath));
+        }
         #endregion
 
         #region Get
