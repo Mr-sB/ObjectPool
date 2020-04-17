@@ -192,27 +192,37 @@ namespace GameUtil
                 deleteTime.AssetDeleteTime = assetDeleteTime;
             }
             else
-            {
-                deleteTime = new DeleteTime(poolItemDeleteTime, assetDeleteTime);
-                mDeleteTimes.Add(poolKey, deleteTime);
-                if (mPoolItems.TryGetValue(poolKey, out var poolItemBase))
-                    poolItemBase.SetDeleteTime(deleteTime);
-            }
+                AddDeleteTime(poolKey, new DeleteTime(poolItemDeleteTime, assetDeleteTime));
         }
         
         public void SetPoolItemDeleteTime<T>(string assetPath, LoadMode loadMode, float poolItemDeleteTime) where T : Object
         {
-            SetDeleteTime<T>(assetPath, loadMode, poolItemDeleteTime, DEFAULT_ASSET_DELETE_TIME);
+            PoolKey poolKey = new PoolKey(typeof(T), assetPath, loadMode);
+            if (mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
+                deleteTime.PoolItemDeleteTime = poolItemDeleteTime;
+            else
+                AddDeleteTime(poolKey, new DeleteTime(poolItemDeleteTime, DEFAULT_ASSET_DELETE_TIME));
         }
 
         public void SetAssetDeleteTime<T>(string assetPath, LoadMode loadMode, float assetDeleteTime) where T : Object
         {
-            SetDeleteTime<T>(assetPath, loadMode, DEFAULT_POOL_ITEM_DELETE_TIME, assetDeleteTime);
+            PoolKey poolKey = new PoolKey(typeof(T), assetPath, loadMode);
+            if (mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
+                deleteTime.AssetDeleteTime = assetDeleteTime;
+            else
+                AddDeleteTime(poolKey, new DeleteTime(DEFAULT_POOL_ITEM_DELETE_TIME, assetDeleteTime));
         }
 
         public bool TryGetDeleteTime<T>(string assetPath, LoadMode loadMode, out DeleteTime deleteTime) where T : Object
         {
             return mDeleteTimes.TryGetValue(new PoolKey(typeof(T), assetPath, loadMode), out deleteTime);
+        }
+
+        private void AddDeleteTime(PoolKey poolKey, DeleteTime deleteTime)
+        {
+            mDeleteTimes.Add(poolKey, deleteTime);
+            if (mPoolItems.TryGetValue(poolKey, out var poolItemBase))
+                poolItemBase.SetDeleteTime(deleteTime);
         }
         #endregion
 
