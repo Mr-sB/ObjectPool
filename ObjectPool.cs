@@ -80,8 +80,10 @@ namespace GameUtil
         //HashSet方便删除
         private readonly HashSet<PoolKey> mPoolKeys = new HashSet<PoolKey>();
         private readonly List<PoolKey> mToDeletePoolKeys = new List<PoolKey>();
+        //DeleteTime
         private readonly Dictionary<PoolKey, DeleteTime> mDeleteTimes = new Dictionary<PoolKey, DeleteTime>();
-        
+        private readonly DeleteTime mDefaultDeleteTime = new DeleteTime(DEFAULT_POOL_ITEM_DELETE_TIME, DEFAULT_ASSET_DELETE_TIME);
+
         public const string DEFAULT_PREFAB_ROOT_PATH = "Prefabs/View/";
         public const string DEFAULT_GAME_PATH = "Prefabs/Game/";
         public const string DEFAULT_PARTICLE_PATH = "Prefabs/ParticleSystem/";
@@ -190,31 +192,27 @@ namespace GameUtil
                 deleteTime.AssetDeleteTime = assetDeleteTime;
             }
             else
-                mDeleteTimes.Add(poolKey, new DeleteTime(poolItemDeleteTime, assetDeleteTime));
+            {
+                deleteTime = new DeleteTime(poolItemDeleteTime, assetDeleteTime);
+                mDeleteTimes.Add(poolKey, deleteTime);
+                if (mPoolItems.TryGetValue(poolKey, out var poolItemBase))
+                    poolItemBase.SetDeleteTime(deleteTime);
+            }
         }
         
         public void SetPoolItemDeleteTime<T>(string assetPath, LoadMode loadMode, float poolItemDeleteTime) where T : Object
         {
-            PoolKey poolKey = new PoolKey(typeof(T), assetPath, loadMode);
-            if (mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
-                deleteTime.PoolItemDeleteTime = poolItemDeleteTime;
-            else
-                mDeleteTimes.Add(poolKey, new DeleteTime(poolItemDeleteTime, DEFAULT_ASSET_DELETE_TIME));
+            SetDeleteTime<T>(assetPath, loadMode, poolItemDeleteTime, DEFAULT_ASSET_DELETE_TIME);
         }
 
         public void SetAssetDeleteTime<T>(string assetPath, LoadMode loadMode, float assetDeleteTime) where T : Object
         {
-            PoolKey poolKey = new PoolKey(typeof(T), assetPath, loadMode);
-            if (mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
-                deleteTime.AssetDeleteTime = assetDeleteTime;
-            else
-                mDeleteTimes.Add(poolKey, new DeleteTime(DEFAULT_POOL_ITEM_DELETE_TIME, assetDeleteTime));
+            SetDeleteTime<T>(assetPath, loadMode, DEFAULT_POOL_ITEM_DELETE_TIME, assetDeleteTime);
         }
 
         public bool TryGetDeleteTime<T>(string assetPath, LoadMode loadMode, out DeleteTime deleteTime) where T : Object
         {
-            PoolKey poolKey = new PoolKey(typeof(T), assetPath, loadMode);
-            return mDeleteTimes.TryGetValue(poolKey, out deleteTime);
+            return mDeleteTimes.TryGetValue(new PoolKey(typeof(T), assetPath, loadMode), out deleteTime);
         }
         #endregion
 
@@ -371,10 +369,7 @@ namespace GameUtil
         {
             PoolKey poolKey = new PoolKey(typeof(T), assetPath, loadMode);
             if (!mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
-            {
-                deleteTime = new DeleteTime(DEFAULT_POOL_ITEM_DELETE_TIME, DEFAULT_ASSET_DELETE_TIME);
-                mDeleteTimes.Add(poolKey, deleteTime);
-            }
+                deleteTime = mDefaultDeleteTime;
             var poolItem = new PoolItem<T>(assetPath, deleteTime, loadMode);
             mPoolKeys.Add(poolKey);
             mPoolItems.Add(poolKey, poolItem);

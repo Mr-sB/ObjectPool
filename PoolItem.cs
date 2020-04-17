@@ -5,7 +5,7 @@ namespace GameUtil
 {
     public abstract class PoolItemBase
     {
-        protected readonly ObjectPool.DeleteTime mDeleteTime;
+        protected ObjectPool.DeleteTime mDeleteTime;
         protected readonly string mAssetPath;
         protected readonly ObjectPool.LoadMode mLoadMode;
         protected readonly HashSet<int> mItemIDs;
@@ -17,6 +17,11 @@ namespace GameUtil
             mDeleteTime = deleteTime;
             mLoadMode = loadMode;
             mItemIDs = new HashSet<int>();
+        }
+
+        public void SetDeleteTime(ObjectPool.DeleteTime deleteTime)
+        {
+            mDeleteTime = deleteTime;
         }
         
         public abstract bool Update();
