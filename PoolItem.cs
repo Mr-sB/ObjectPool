@@ -70,11 +70,14 @@ namespace GameUtil
                 //     m_ObjRes = AssetBundleManager.Instance.GetSceneAsset<T>(assetPath);
                 //     break;
             }
-
             if (mIsGameObject)
             {
                 mSpawnHandlers = new List<ISpawnHandler>();
                 mDisposeHandlers = new List<IDisposeHandler>();
+            }
+            if (!m_ObjRes)
+            {
+                Debug.LogError("ObjectItem load asset is null! LoadMode: " + loadMode + ". AssetPath: " + assetPath);
             }
         }
 

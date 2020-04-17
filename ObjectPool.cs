@@ -271,7 +271,11 @@ namespace GameUtil
         public void Dispose<T>(T obj, string assetPath, LoadMode loadMode) where T : Object
         {
             if(!obj) return;
-            GetPoolItem<T>(assetPath, loadMode).Dispose(obj);
+            //如果是GameObject，做特殊处理
+            if (obj is GameObject go)
+                DisposeGameObject(go);
+            else
+                GetPoolItem<T>(assetPath, loadMode).Dispose(obj);
         }
         
         public void DisposeGameObject(GameObject go)
