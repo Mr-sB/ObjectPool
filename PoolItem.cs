@@ -82,7 +82,7 @@ namespace GameUtil
             }
             if (!m_ObjRes)
             {
-                Debug.LogError("ObjectItem load asset is null! LoadMode: " + loadMode + ". AssetPath: " + assetPath);
+                Debug.LogError("ObjectItem load asset is null! Type: " + typeof(T) + ", LoadMode: " + loadMode + ", AssetPath: " + assetPath);
             }
         }
 
