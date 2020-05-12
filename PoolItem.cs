@@ -180,12 +180,10 @@ namespace GameUtil
 
         private T Spawn()
         {
-            if (!mIsGameObject) return Object.Instantiate(m_ObjRes);
+            var obj = Object.Instantiate(m_ObjRes);
+            if (!mIsGameObject || !(obj is GameObject go)) return obj;
             
             //GameObject类型需要多做一些处理
-            var obj = Object.Instantiate(m_ObjRes, ObjectPool.Instance.transform);
-            //转换失败
-            if (!(obj is GameObject go)) return obj;
             var dispose = go.GetComponent<DisposeSelf>();
             if(!dispose)
                 dispose = go.AddComponent<DisposeSelf>();
