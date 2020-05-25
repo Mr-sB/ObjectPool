@@ -6,25 +6,8 @@ using Object = UnityEngine.Object;
 
 namespace GameUtil
 {
-    public class ObjectPool : MonoBehaviour
+    public class ObjectPool : ObjectPoolBase<ObjectPool>
     {
-        #region DeleteTime
-        public const float DEFAULT_POOL_ITEM_DELETE_TIME = 30;
-        public const float DEFAULT_ASSET_DELETE_TIME = 30;
-
-        public class DeleteTime
-        {
-            public float PoolItemDeleteTime;
-            public float AssetDeleteTime;
-
-            public DeleteTime(float poolItemDeleteTime, float assetDeleteTime)
-            {
-                PoolItemDeleteTime = poolItemDeleteTime;
-                AssetDeleteTime = assetDeleteTime;
-            }
-        }
-        #endregion
-
         #region PoolKey
         //实现IEquatable<T>接口，避免在比较时装箱拆箱，产生GC
         private struct PoolKey : IEquatable<PoolKey>
@@ -83,58 +66,15 @@ namespace GameUtil
         //DeleteTime
         private readonly Dictionary<PoolKey, DeleteTime> mDeleteTimes = new Dictionary<PoolKey, DeleteTime>();
         private readonly DeleteTime mDefaultDeleteTime = new DeleteTime(DEFAULT_POOL_ITEM_DELETE_TIME, DEFAULT_ASSET_DELETE_TIME);
-
+        public const float DEFAULT_POOL_ITEM_DELETE_TIME = 30;
+        public const float DEFAULT_ASSET_DELETE_TIME = 30;
+        
         public const string DEFAULT_PREFAB_ROOT_PATH = "Prefabs/View/";
         public const string DEFAULT_GAME_PATH = "Prefabs/Game/";
         public const string DEFAULT_PARTICLE_PATH = "Prefabs/ParticleSystem/";
         public const string DEFAULT_MATERIAL_PATH = "Materials/";
 
-        #region Instance
-#if UNITY_EDITOR
-        private static bool _onApplicationQuit;
-#endif
-
-        private static ObjectPool instance;
-        public static ObjectPool Instance
-        {
-            get
-            {
-                //Aviod calling Instance in OnDestroy method to cause error when application quit
-#if UNITY_EDITOR
-                if (_onApplicationQuit)
-                {
-                    return new ObjectPool();
-                }
-#endif
-                if (instance == null)
-                {
-                    //Find
-                    instance = FindObjectOfType<ObjectPool>();
-                    //Create
-                    if (instance == null)
-                    {
-                        var go = new GameObject(nameof(ObjectPool));
-                        instance = go.AddComponent<ObjectPool>();
-                        DontDestroyOnLoad(go);
-                    }
-                }
-                return instance;
-            }
-        }
-
-        private void Awake()
-        {
-            if (instance == null)
-                instance = this;
-        }
-
-#if UNITY_EDITOR
-        private void OnApplicationQuit()
-        {
-            _onApplicationQuit = true;
-        }
-#endif
-        #endregion
+        
 
         #region GetPath
         public static string GetViewPath(string name, string path = null, bool needDefaultPath = true)
@@ -365,22 +305,22 @@ namespace GameUtil
             }
         }
 
-        private PoolItem<T> GetPoolItem<T>(string assetPath, LoadMode loadMode) where T : Object
+        private ObjectPoolItem<T> GetPoolItem<T>(string assetPath, LoadMode loadMode) where T : Object
         {
-            PoolItem<T> poolItem;
+            ObjectPoolItem<T> poolItem;
             if (mPoolItems.TryGetValue(new PoolKey(typeof(T), assetPath, loadMode), out var poolItemBase))
-                poolItem = poolItemBase as PoolItem<T>;
+                poolItem = poolItemBase as ObjectPoolItem<T>;
             else
                 poolItem = CreatePoolItem<T>(assetPath, loadMode);
             return poolItem;
         }
         
-        private PoolItem<T> CreatePoolItem<T>(string assetPath, LoadMode loadMode) where T : Object
+        private ObjectPoolItem<T> CreatePoolItem<T>(string assetPath, LoadMode loadMode) where T : Object
         {
             PoolKey poolKey = new PoolKey(typeof(T), assetPath, loadMode);
             if (!mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
                 deleteTime = mDefaultDeleteTime;
-            var poolItem = new PoolItem<T>(assetPath, deleteTime, loadMode);
+            var poolItem = new ObjectPoolItem<T>(assetPath, deleteTime, loadMode);
             mPoolKeys.Add(poolKey);
             mPoolItems.Add(poolKey, poolItem);
             return poolItem;

@@ -3,32 +3,7 @@ using UnityEngine;
 
 namespace GameUtil
 {
-    public abstract class PoolItemBase
-    {
-        protected ObjectPool.DeleteTime mDeleteTime;
-        protected readonly string mAssetPath;
-        protected readonly ObjectPool.LoadMode mLoadMode;
-        protected readonly HashSet<int> mItemIDs;
-        protected float mNullTime;
-
-        public PoolItemBase(string assetPath, ObjectPool.DeleteTime deleteTime, ObjectPool.LoadMode loadMode)
-        {
-            mAssetPath = assetPath;
-            mDeleteTime = deleteTime;
-            mLoadMode = loadMode;
-            mItemIDs = new HashSet<int>();
-        }
-
-        public void SetDeleteTime(ObjectPool.DeleteTime deleteTime)
-        {
-            mDeleteTime = deleteTime;
-        }
-        
-        public abstract bool Update();
-        public abstract void Clear();
-    }
-    
-    public class PoolItem<T> : PoolItemBase where T : Object
+    public class ObjectPoolItem<T> : PoolItemBase where T : Object
     {
         public struct Item
         {
@@ -50,17 +25,22 @@ namespace GameUtil
                 Time = time;
             }
         }
-
+        private readonly string mAssetPath;
+        private readonly ObjectPool.LoadMode mLoadMode;
         private readonly T m_ObjRes;//原始资源
         private readonly bool mIsGameObject;
+        private readonly HashSet<int> mItemIDs;
         //链表，方便增删
         private readonly LinkedList<Item> mItems;
         private readonly List<ISpawnHandler> mSpawnHandlers;
         private readonly List<IDisposeHandler> mDisposeHandlers;
 
-        public PoolItem(string assetPath, ObjectPool.DeleteTime deleteTime, ObjectPool.LoadMode loadMode) : base(assetPath, deleteTime, loadMode)
+        public ObjectPoolItem(string assetPath, DeleteTime deleteTime, ObjectPool.LoadMode loadMode) : base(deleteTime)
         {
+            mAssetPath = assetPath;
+            mLoadMode = loadMode;
             mIsGameObject = typeof(T) == typeof(GameObject);
+            mItemIDs = new HashSet<int>();
             mItems = new LinkedList<Item>();
             switch (mLoadMode)
             {
