@@ -174,24 +174,66 @@ namespace GameUtil
 
         private void OnGameObjectSpawn(GameObject go)
         {
-            go.GetComponentsInChildren(mSpawnHandlers);
-            if (mSpawnHandlers != null && mSpawnHandlers.Count > 0)
+            List<ISpawnHandler> spawnHandlers;
+            bool needDispose;
+            if (mSpawnHandlers != null && mSpawnHandlers.Count == 0)
             {
-                for (int i = 0, count = mSpawnHandlers.Count; i < count; i++)
-                    mSpawnHandlers[i].OnSpawn();
-                mSpawnHandlers.Clear();
+                spawnHandlers = mSpawnHandlers;
+                needDispose = false;
             }
+            else
+            {
+                spawnHandlers = CommonPool.Instance.Get<List<ISpawnHandler>>();
+                spawnHandlers.Clear();
+                needDispose = true;
+            }
+            go.GetComponentsInChildren(spawnHandlers);
+            if (spawnHandlers.Count > 0)
+            {
+                //Count - 1
+                for (int i = 0, count = spawnHandlers.Count - 1; i < count; i++)
+                    spawnHandlers[i].OnSpawn();
+                //单独触发最后一个接口，提前Clear Handlers
+                var lastHandler = spawnHandlers[spawnHandlers.Count - 1];
+                spawnHandlers.Clear();
+                if (needDispose)
+                    CommonPool.Instance.Dispose(spawnHandlers);
+                lastHandler.OnSpawn();
+            }
+            else if (needDispose)
+                CommonPool.Instance.Dispose(spawnHandlers);
         }
 
         private void OnGameObjectDispose(GameObject go)
         {
-            go.GetComponentsInChildren(mDisposeHandlers);
-            if (mDisposeHandlers != null && mDisposeHandlers.Count > 0)
+            List<IDisposeHandler> disposeHandlers;
+            bool needDispose;
+            if (mDisposeHandlers != null && mDisposeHandlers.Count == 0)
             {
-                for (int i = 0, count = mDisposeHandlers.Count; i < count; i++)
-                    mDisposeHandlers[i].OnDispose();
-                mDisposeHandlers.Clear();
+                disposeHandlers = mDisposeHandlers;
+                needDispose = false;
             }
+            else
+            {
+                disposeHandlers = CommonPool.Instance.Get<List<IDisposeHandler>>();
+                disposeHandlers.Clear();
+                needDispose = true;
+            }
+            go.GetComponentsInChildren(disposeHandlers);
+            if (disposeHandlers.Count > 0)
+            {
+                //Count - 1
+                for (int i = 0, count = disposeHandlers.Count - 1; i < count; i++)
+                    disposeHandlers[i].OnDispose();
+                //单独触发最后一个接口，提前Clear Handlers
+                var lastHandler = disposeHandlers[disposeHandlers.Count - 1];
+                disposeHandlers.Clear();
+                if (needDispose)
+                    CommonPool.Instance.Dispose(disposeHandlers);
+                lastHandler.OnDispose();
+            }
+            else if (needDispose)
+                CommonPool.Instance.Dispose(disposeHandlers);
         }
     }
 }
