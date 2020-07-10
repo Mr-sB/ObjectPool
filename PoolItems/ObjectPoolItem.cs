@@ -59,6 +59,13 @@ namespace GameUtil
             {
                 mSpawnHandlers = new List<ISpawnHandler>();
                 mDisposeHandlers = new List<IDisposeHandler>();
+                if (m_ObjRes && m_ObjRes is GameObject go)
+                {
+                    var itemKey = go.GetComponent<ObjectPoolItemKey>();
+                    if(!itemKey)
+                        itemKey = go.AddComponent<ObjectPoolItemKey>();
+                    itemKey.Init(mAssetPath, mLoadMode);
+                }
             }
             if (!m_ObjRes)
             {
@@ -164,10 +171,6 @@ namespace GameUtil
             if (!mIsGameObject || !(obj is GameObject go)) return obj;
             
             //GameObject类型需要多做一些处理
-            var dispose = go.GetComponent<DisposeSelf>();
-            if(!dispose)
-                dispose = go.AddComponent<DisposeSelf>();
-            dispose.Init(mAssetPath, mLoadMode);
             OnGameObjectSpawn(go);
             return obj;
         }

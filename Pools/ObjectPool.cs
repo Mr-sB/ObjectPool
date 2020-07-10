@@ -243,7 +243,7 @@ namespace GameUtil
             if(_onApplicationQuit) return;
 #endif
             if(!go) return;
-            var dispose = go.GetComponent<DisposeSelf>();
+            var dispose = go.GetComponent<ObjectPoolItemKey>();
             if (!dispose)
             {
                 Destroy(go);
