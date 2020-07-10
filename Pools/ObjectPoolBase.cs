@@ -6,7 +6,7 @@ namespace GameUtil
     {
         #region Instance
 #if UNITY_EDITOR
-        private static bool _onApplicationQuit;
+        protected static bool _onApplicationQuit;
 #endif
 
         private static T instance;

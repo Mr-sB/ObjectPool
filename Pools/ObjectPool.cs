@@ -226,6 +226,9 @@ namespace GameUtil
         #region Dispose
         public void Dispose<T>(T obj, string assetPath, LoadMode loadMode) where T : Object
         {
+#if UNITY_EDITOR
+            if(_onApplicationQuit) return;
+#endif
             if(!obj) return;
             //如果是GameObject，做特殊处理
             if (obj is GameObject go)
@@ -236,6 +239,9 @@ namespace GameUtil
         
         public void DisposeGameObject(GameObject go)
         {
+#if UNITY_EDITOR
+            if(_onApplicationQuit) return;
+#endif
             if(!go) return;
             var dispose = go.GetComponent<DisposeSelf>();
             if (!dispose)
