@@ -289,6 +289,16 @@ namespace GameUtil
         }
         #endregion
 
+        public int GetItemCount<T>(string assetPath, LoadMode loadMode) where T : Object
+        {
+            return mPoolItems.TryGetValue(new PoolKey(typeof(T), assetPath, loadMode), out var poolItemBase) ? poolItemBase.ItemCount : 0;
+        }
+
+        public void Resize<T>(string assetPath, LoadMode loadMode, int size) where T : Object
+        {
+            GetPoolItem<T>(assetPath, loadMode).Resize(size, transform);
+        }
+
         private void Update()
         {
             if (mPoolKeys.Count > 0)

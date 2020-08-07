@@ -103,6 +103,16 @@ namespace GameUtil
         }
         #endregion
         
+        public int GetItemCount<T>() where T : class, new()
+        {
+            return mPoolItems.TryGetValue(typeof(T), out var poolItemBase) ? poolItemBase.ItemCount : 0;
+        }
+        
+        public void Resize<T>(int size) where T : class, new()
+        {
+            GetPoolItem<T>().Resize(size);
+        }
+        
         private void Update()
         {
             if (mPoolKeys.Count > 0)

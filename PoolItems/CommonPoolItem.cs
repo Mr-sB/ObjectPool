@@ -19,7 +19,8 @@ namespace GameUtil
         
         //链表，方便增删
         private readonly LinkedList<Item> mItems;
-        
+        public override int ItemCount => mItems.Count;
+
         public CommonPoolItem(DeleteTime deleteTime) : base(deleteTime)
         {
             mItems = new LinkedList<Item>();
@@ -28,6 +29,30 @@ namespace GameUtil
         public override void Clear()
         {
             mItems.Clear();
+        }
+
+        public void Resize(int size)
+        {
+            if (size <= 0)
+            {
+                Clear();
+                return;
+            }
+            int difference = size - mItems.Count;
+            if(difference == 0) return;
+            if (difference > 0)
+            {
+                //Add
+                for (int i = 0; i < difference; i++)
+                    mItems.AddLast(new Item(Spawn(), Time.realtimeSinceStartup));
+            }
+            else
+            {
+                //Reduce 最前面的为最先删除的
+                difference = -difference;
+                for (int i = 0; i < difference; i++)
+                    mItems.RemoveFirst();
+            }
         }
 
         public T Get()

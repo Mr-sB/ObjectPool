@@ -15,6 +15,7 @@ namespace GameUtil
             mDeleteTime = deleteTime;
         }
         
+        public abstract int ItemCount { get; }
         public abstract bool Update();
         public abstract void Clear();
     }

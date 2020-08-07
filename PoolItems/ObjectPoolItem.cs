@@ -34,6 +34,7 @@ namespace GameUtil
         private readonly LinkedList<Item> mItems;
         private readonly List<ISpawnHandler> mSpawnHandlers;
         private readonly List<IDisposeHandler> mDisposeHandlers;
+        public override int ItemCount => mItems.Count;
 
         public ObjectPoolItem(string assetPath, DeleteTime deleteTime, ObjectPool.LoadMode loadMode) : base(deleteTime)
         {
@@ -102,7 +103,47 @@ namespace GameUtil
             mItems.Clear();
             mItemIDs.Clear();
         }
-        
+
+        public void Resize(int size, Transform parent)
+        {
+            if (size <= 0)
+            {
+                Clear();
+                return;
+            }
+            int difference = size - mItems.Count;
+            if(difference == 0) return;
+            if (difference > 0)
+            {
+                //Add
+                for (int i = 0; i < difference; i++)
+                {
+                    var obj = Spawn(parent, false);
+                    //GameObject类型需要多做一些处理
+                    if (mIsGameObject && obj is GameObject go)
+                    {
+                        go.SetActive(false);
+                    }
+
+                    int id = obj.GetInstanceID();
+                    mItems.AddLast(new Item(obj, id, Time.realtimeSinceStartup));
+                    mItemIDs.Add(id);
+                }
+            }
+            else
+            {
+                //Reduce 最前面的为最先删除的
+                difference = -difference;
+                for (int i = 0; i < difference; i++)
+                {
+                    var obj = mItems.First.Value.Object;
+                    if (obj)
+                        mItemIDs.Remove(obj.GetInstanceID());
+                    mItems.RemoveFirst();
+                }
+            }
+        }
+
         public T Get()
         {
             mNullTime = Time.realtimeSinceStartup;
@@ -180,9 +221,13 @@ namespace GameUtil
             return true;
         }
 
-        private T Spawn()
+        private T Spawn(Transform parent = null, bool callInterface = true)
         {
-            var obj = Object.Instantiate(m_ObjRes);
+            T obj;
+            if(mIsGameObject && parent)
+                obj = Object.Instantiate(m_ObjRes, parent);
+            else
+                obj = Object.Instantiate(m_ObjRes);
             if (!mIsGameObject || !(obj is GameObject go)) return obj;
             
             //GameObject类型需要多做一些处理
@@ -196,7 +241,8 @@ namespace GameUtil
                 itemKey.Init(mAssetPath, mLoadMode);
             }
 #endif
-            OnGameObjectSpawn(go);
+            if(callInterface)
+                OnGameObjectSpawn(go);
             return obj;
         }
 
