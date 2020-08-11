@@ -25,7 +25,7 @@ namespace GameUtil
             
             public bool Equals(PoolKey other)
             {
-                return PoolType == other.PoolType && AssetPath == other.AssetPath;
+                return PoolType == other.PoolType && AssetPath == other.AssetPath && LoadMode == other.LoadMode;
             }
             
             public static bool operator ==(PoolKey lhs, PoolKey rhs)
