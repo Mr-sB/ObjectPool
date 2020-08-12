@@ -6,13 +6,17 @@ namespace GameUtil
     public class ObjectPoolItemKey : MonoBehaviour
     {
         [SerializeField] private ObjectPool.LoadMode mLoadMode;
-        [SerializeField] private string mAssetPath;
+        [SerializeField] private string mBundleName;
+        [SerializeField] private string mAssetName;
         public ObjectPool.LoadMode LoadMode => mLoadMode;
-        public string AssetPath => mAssetPath;
-        public void Init(string assetPath, ObjectPool.LoadMode loadMode)
+        public string BundleName => mBundleName;
+        public string AssetName => mAssetName;
+        
+        public void Init(ObjectPool.LoadMode loadMode, string bundleName, string assetName)
         {
-            mAssetPath = assetPath;
             mLoadMode = loadMode;
+            mBundleName = bundleName;
+            mAssetName = assetName;
         }
     }
 }

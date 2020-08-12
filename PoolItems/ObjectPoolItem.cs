@@ -25,8 +25,9 @@ namespace GameUtil
                 Time = time;
             }
         }
-        private readonly string mAssetPath;
         private readonly ObjectPool.LoadMode mLoadMode;
+        private readonly string mBundleName;
+        private readonly string mAssetName;
         private readonly T m_ObjRes;//原始资源
         private readonly bool mIsGameObject;
         private readonly HashSet<int> mItemIDs;
@@ -36,25 +37,24 @@ namespace GameUtil
         private readonly List<IDisposeHandler> mDisposeHandlers;
         public override int ItemCount => mItems.Count;
 
-        public ObjectPoolItem(string assetPath, DeleteTime deleteTime, ObjectPool.LoadMode loadMode) : base(deleteTime)
+        public ObjectPoolItem(ObjectPool.LoadMode loadMode, string bundleName, string assetName, DeleteTime deleteTime) : base(deleteTime)
         {
-            mAssetPath = assetPath;
             mLoadMode = loadMode;
+            mBundleName = bundleName;
+            mAssetName = assetName;
             mIsGameObject = typeof(T) == typeof(GameObject);
             mItemIDs = new HashSet<int>();
             mItems = new LinkedList<Item>();
             switch (mLoadMode)
             {
                 case ObjectPool.LoadMode.Resource:
-                    m_ObjRes = Resources.Load<T>(assetPath);
+                    m_ObjRes = Resources.Load<T>(assetName);
                     break;
-                // TODO: Add yourself load methods
-                // case ObjectPool.LoadMode.CommonAssetBundle:
-                //     m_ObjRes = AssetBundleManager.Instance.GetCommonAsset<T>(assetPath);
+                // TODO: Add yourself AssetBundle load method
+                // case ObjectPool.LoadMode.AssetBundle:
+                //     m_ObjRes = AssetBundleManager.GetAsset<T>(bundleName, assetName);
                 //     break;
-                // case ObjectPool.LoadMode.SceneAssetBundle:
-                //     m_ObjRes = AssetBundleManager.Instance.GetSceneAsset<T>(assetPath);
-                //     break;
+                // MARK: Add yourself load methods
             }
             if (mIsGameObject)
             {
@@ -69,7 +69,7 @@ namespace GameUtil
                         var itemKey = go.GetComponent<ObjectPoolItemKey>();
                         if(!itemKey)
                             itemKey = go.AddComponent<ObjectPoolItemKey>();
-                        itemKey.Init(mAssetPath, mLoadMode);
+                        itemKey.Init(mLoadMode, mBundleName, mAssetName);
                     }
                 }
 #else
@@ -79,14 +79,12 @@ namespace GameUtil
                     var itemKey = go.GetComponent<ObjectPoolItemKey>();
                     if(!itemKey)
                         itemKey = go.AddComponent<ObjectPoolItemKey>();
-                    itemKey.Init(mAssetPath, mLoadMode);
+                    itemKey.Init(mLoadMode, mBundleName, mAssetName);
                 }
 #endif
             }
             if (!m_ObjRes)
-            {
-                Debug.LogError("ObjectItem load asset is null! Type: " + typeof(T) + ", LoadMode: " + loadMode + ", AssetPath: " + assetPath);
-            }
+                Debug.LogError("ObjectItem load asset is null! Type: " + typeof(T) + ", LoadMode: " + loadMode + ", BundleName: " + bundleName + ", AssetName: " + assetName);
         }
 
         public override void Clear()
@@ -238,7 +236,7 @@ namespace GameUtil
                 var itemKey = go.GetComponent<ObjectPoolItemKey>();
                 if(!itemKey)
                     itemKey = go.AddComponent<ObjectPoolItemKey>();
-                itemKey.Init(mAssetPath, mLoadMode);
+                itemKey.Init(mLoadMode, mBundleName, mAssetName);
             }
 #endif
             if(callInterface)
