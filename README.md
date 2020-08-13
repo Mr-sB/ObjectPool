@@ -16,3 +16,24 @@ public interface IDisposeHandler
 }
 ```
 * The `ObjectPool` basically does not consume extra memory and GC.
+
+# Note
+* If you want to cache Object from `AssetBundle`, maybe you can use [AssetBundleManager](https://github.com/Mr-sB/AssetBundleManager)(Open source) to manage your AssetBundles.
+```c#
+public ObjectPoolItem(ObjectPool.LoadMode loadMode, string bundleName, string assetName, DeleteTime deleteTime) : base(deleteTime)
+{
+    ...
+    switch (mLoadMode)
+    {
+        case ObjectPool.LoadMode.Resource:
+            m_ObjRes = Resources.Load<T>(assetName);
+            break;
+        // MARK: Use AssetBundleManager to load asset.
+        case ObjectPool.LoadMode.AssetBundle:
+            m_ObjRes = AssetBundleManager.GetAsset<T>(bundleName, assetName);
+            break;
+        // MARK: Add yourself load methods
+    }
+    ...
+}
+```
