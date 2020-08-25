@@ -250,6 +250,8 @@ namespace GameUtil
                 Destroy(go);
                 return;
             }
+            //先隐藏再设置parent
+            go.SetActive(false);
             go.transform.SetParent(transform);
             
             GetPoolItem<GameObject>(dispose.LoadMode, dispose.BundleName, dispose.AssetName).Dispose(go);

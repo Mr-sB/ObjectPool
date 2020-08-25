@@ -164,8 +164,9 @@ namespace GameUtil
 
             if (!mIsGameObject || !(obj is GameObject go)) return obj;
             //GameObject类型需要多做一些处理
-            go.SetActive(true);
+            //先设置parent再显示
             go.transform.SetParent(null);
+            go.SetActive(true);
             OnGameObjectSpawn(go);
             return obj;
         }
@@ -181,7 +182,6 @@ namespace GameUtil
             if (!mIsGameObject || !(obj is GameObject go)) return;
             
             //GameObject类型需要多做一些处理
-            go.SetActive(false);
             OnGameObjectDispose(go);
         }
 
