@@ -279,7 +279,6 @@ namespace GameUtil
                 mPoolKeys.Remove(poolKey);
                 poolItem.Clear();
                 mPoolItems.Remove(poolKey);
-                Resources.UnloadUnusedAssets();
             }
         }
         
@@ -290,7 +289,6 @@ namespace GameUtil
             foreach (var poolItem in mPoolItems.Values)
                 poolItem.Clear();
             mPoolItems.Clear();
-            Resources.UnloadUnusedAssets();
         }
         #endregion
 
