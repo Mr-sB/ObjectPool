@@ -60,19 +60,7 @@ namespace GameUtil
             {
                 mSpawnHandlers = new List<ISpawnHandler>();
                 mDisposeHandlers = new List<IDisposeHandler>();
-#if UNITY_EDITOR
-                //直接添加在预制体上
-                if(mLoadMode != ObjectPool.LoadMode.Resource)
-                {
-                    if (m_ObjRes && m_ObjRes is GameObject go)
-                    {
-                        var itemKey = go.GetComponent<ObjectPoolItemKey>();
-                        if(!itemKey)
-                            itemKey = go.AddComponent<ObjectPoolItemKey>();
-                        itemKey.Init(mLoadMode, mBundleName, mAssetName);
-                    }
-                }
-#else
+#if !UNITY_EDITOR
                 //直接添加在预制体上
                 if (m_ObjRes && m_ObjRes is GameObject go)
                 {
@@ -231,13 +219,10 @@ namespace GameUtil
             //GameObject类型需要多做一些处理
 #if UNITY_EDITOR
             //添加在实例对象上
-            if (mLoadMode == ObjectPool.LoadMode.Resource)
-            {
-                var itemKey = go.GetComponent<ObjectPoolItemKey>();
-                if(!itemKey)
-                    itemKey = go.AddComponent<ObjectPoolItemKey>();
-                itemKey.Init(mLoadMode, mBundleName, mAssetName);
-            }
+            var itemKey = go.GetComponent<ObjectPoolItemKey>();
+            if(!itemKey)
+                itemKey = go.AddComponent<ObjectPoolItemKey>();
+            itemKey.Init(mLoadMode, mBundleName, mAssetName);
 #endif
             if(callInterface)
                 OnGameObjectSpawn(go);
