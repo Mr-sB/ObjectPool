@@ -209,6 +209,7 @@ namespace GameUtil
 
         private T Spawn(Transform parent = null, bool callInterface = true)
         {
+            if (!m_ObjRes) return null;
             T obj;
             if(mIsGameObject && parent)
                 obj = Object.Instantiate(m_ObjRes, parent);
