@@ -122,9 +122,10 @@ namespace GameUtil
                 difference = -difference;
                 for (int i = 0; i < difference; i++)
                 {
-                    var obj = mItems.First.Value.Object;
-                    if (obj)
-                        mItemIDs.Remove(obj.GetInstanceID());
+                    var value = mItems.First.Value;
+                    if (value.Object)
+                        Object.Destroy(value.Object);
+                    mItemIDs.Remove(value.InstanceID);
                     mItems.RemoveFirst();
                 }
             }
