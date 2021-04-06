@@ -14,7 +14,7 @@ namespace GameUtil
         {
             get
             {
-                //Aviod calling Instance in OnDestroy method to cause error when application quit
+                //Avoid calling Instance in OnDestroy method to cause error when application quit
 #if UNITY_EDITOR
                 if (_onApplicationQuit)
                 {
