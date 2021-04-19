@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,6 +18,9 @@ namespace GameUtil
             }
         }
         
+        private static Action<T> mSpawnHandler;
+        private static Action<T> mDisposeHandler;
+        
         //链表，方便增删
         private readonly LinkedList<Item> mItems;
         public override int ItemCount => mItems.Count;
@@ -24,6 +28,22 @@ namespace GameUtil
         public CommonPoolItem(DeleteTime deleteTime) : base(deleteTime)
         {
             mItems = new LinkedList<Item>();
+        }
+
+        public static void SetHandlers(Action<T> spawnHandler, Action<T> disposeHandler)
+        {
+            SetSpawnHandler(spawnHandler);
+            SetDisposeHandler(disposeHandler);
+        }
+        
+        public static void SetSpawnHandler(Action<T> handler)
+        {
+            mSpawnHandler = handler;
+        }
+        
+        public static void SetDisposeHandler(Action<T> handler)
+        {
+            mDisposeHandler = handler;
         }
         
         public override void Clear()
@@ -44,7 +64,7 @@ namespace GameUtil
             {
                 //Add
                 for (int i = 0; i < difference; i++)
-                    mItems.AddLast(new Item(Spawn(), Time.realtimeSinceStartup));
+                    Dispose(Spawn());
             }
             else
             {
@@ -76,7 +96,8 @@ namespace GameUtil
 
         public void Dispose(T obj)
         {
-            if(obj == null) return;
+            if (obj == null) return;
+            mDisposeHandler?.Invoke(obj);
             mItems.AddLast(new Item(obj, Time.realtimeSinceStartup));
         }
 
@@ -113,7 +134,9 @@ namespace GameUtil
 
         private T Spawn()
         {
-            return new T();
+            T obj = new T();
+            mSpawnHandler?.Invoke(obj);
+            return obj;
         }
     }
 }
