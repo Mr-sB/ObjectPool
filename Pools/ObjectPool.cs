@@ -49,10 +49,10 @@ namespace GameUtil
             {
                 unchecked
                 {
-                    var hashCode = (PoolType != null ? PoolType.GetHashCode() : 0);
+                    var hashCode = (PoolType != null ? PoolType.GetHashCode() : 1);
                     hashCode = (hashCode * 397) ^ (int) LoadMode;
-                    hashCode = (hashCode * 397) ^ (BundleName != null ? BundleName.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (AssetName != null ? AssetName.GetHashCode() : 0);
+                    hashCode = (hashCode * 397) ^ (BundleName != null ? BundleName.GetHashCode() : 1);
+                    hashCode = (hashCode * 397) ^ (AssetName != null ? AssetName.GetHashCode() : 1);
                     return hashCode;
                 }
             }
@@ -69,8 +69,6 @@ namespace GameUtil
 
         //对象池。type + path + load mode => PoolItem
         private readonly Dictionary<PoolKey, PoolItemBase> mPoolItems = new Dictionary<PoolKey, PoolItemBase>();
-        //HashSet方便删除
-        private readonly HashSet<PoolKey> mPoolKeys = new HashSet<PoolKey>();
         private readonly List<PoolKey> mToDeletePoolKeys = new List<PoolKey>();
         //DeleteTime
         private readonly Dictionary<PoolKey, DeleteTime> mDeleteTimes = new Dictionary<PoolKey, DeleteTime>();
@@ -232,7 +230,6 @@ namespace GameUtil
                     createNewPoolItem = true;
                     poolItemBase.Clear();
                     mPoolItems.Remove(poolKey);
-                    mPoolKeys.Remove(poolKey);
                 }
                 else if (poolItem.OriginAsset != originAsset)
                 {
@@ -389,7 +386,6 @@ namespace GameUtil
             PoolKey poolKey = new PoolKey(assetType, loadMode, bundleName, assetName);
             if (mPoolItems.TryGetValue(poolKey, out var poolItem))
             {
-                mPoolKeys.Remove(poolKey);
                 poolItem.Clear();
                 mPoolItems.Remove(poolKey);
             }
@@ -397,7 +393,6 @@ namespace GameUtil
         
         public void ClearAll()
         {
-            mPoolKeys.Clear();
             mToDeletePoolKeys.Clear();
             foreach (var poolItem in mPoolItems.Values)
                 poolItem.Clear();
@@ -429,22 +424,19 @@ namespace GameUtil
 
         private void Update()
         {
-            if (mPoolKeys.Count > 0)
+            if (mPoolItems.Count > 0)
             {
-                foreach (var key in mPoolKeys)
+                foreach (var pair in mPoolItems)
                 {
-                    if (!mPoolItems[key].Update())
-                    {
-                        mPoolItems.Remove(key);
-                        mToDeletePoolKeys.Add(key);
-                    }
+                    if (!pair.Value.Update())
+                        mToDeletePoolKeys.Add(pair.Key);
                 }
             }
 
             if (mToDeletePoolKeys.Count > 0)
             {
                 foreach (var key in mToDeletePoolKeys)
-                    mPoolKeys.Remove(key);
+                    mPoolItems.Remove(key);
                 mToDeletePoolKeys.Clear();
             }
         }
@@ -467,7 +459,6 @@ namespace GameUtil
             if (!mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
                 deleteTime = mDefaultDeleteTime;
             var poolItem = new ObjectPoolItem<T>(loadMode, bundleName, assetName, deleteTime);
-            mPoolKeys.Add(poolKey);
             mPoolItems.Add(poolKey, poolItem);
             return poolItem;
         }
@@ -490,7 +481,6 @@ namespace GameUtil
                 deleteTime = mDefaultDeleteTime;
             var poolItem = (PoolItemBase) Activator.CreateInstance(
                 typeof(ObjectPoolItem<>).MakeGenericType(assetType), loadMode, bundleName, assetName, deleteTime);
-            mPoolKeys.Add(poolKey);
             mPoolItems.Add(poolKey, poolItem);
             return poolItem;
         }
