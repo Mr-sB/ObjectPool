@@ -32,7 +32,7 @@ namespace GameUtil
             }
             catch (Exception e)
             {
-                Debug.LogError(e.StackTrace);
+                Debug.LogError(e, this);
             }
         }
 
@@ -45,7 +45,7 @@ namespace GameUtil
             }
             catch (Exception e)
             {
-                Debug.LogError(e.StackTrace);
+                Debug.LogError(e, this);
             }
         }
     }

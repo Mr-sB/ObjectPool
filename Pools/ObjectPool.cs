@@ -62,6 +62,7 @@ namespace GameUtil
         public enum LoadMode
         {
             Resource,
+            Custom,
             AssetBundle,
             // MARK: Add yourself load modes
         }
@@ -216,6 +217,39 @@ namespace GameUtil
         }
         #endregion
 
+        #region CustomRegister
+        public void RegisterCustomPoolItem<T>(string assetPath, T originAsset) where T : Object
+        {
+            var assetKey = new PoolKey(typeof(T), LoadMode.Custom, null, assetPath);
+            ObjectPoolItem<T> poolItem = null;
+            bool createNewPoolItem = false;
+            if (mPoolItems.TryGetValue(assetKey, out var poolItemBase))
+            {
+                poolItem = poolItemBase as ObjectPoolItem<T>;
+                //Not match, clear and create new pool item.
+                if (poolItem == null)
+                {
+                    createNewPoolItem = true;
+                    poolItemBase.Clear();
+                    mPoolItems.Remove(assetKey);
+                }
+                else if (poolItem.OriginAsset != originAsset)
+                {
+                    poolItem.Clear();
+                    poolItem.SetOriginAsset(originAsset);
+                }
+            }
+            else
+                createNewPoolItem = true;
+
+            if (createNewPoolItem)
+            {
+                poolItem = CreatePoolItem<T>(LoadMode.Custom, null, assetPath);
+                poolItem.SetOriginAsset(originAsset);
+            }
+        }
+        #endregion
+        
         #region GetResorcesMode
         /// <summary>
         /// 获取Prefab实例对象 目录:Prefabs/View/
@@ -255,6 +289,11 @@ namespace GameUtil
         {
             return GetPoolItem<T>(LoadMode.Resource, null, assetPath)?.GetT();
         }
+
+        public T GetCustom<T>(string assetPath) where T : Object
+        {
+            return GetPoolItem<T>(LoadMode.Custom, null, assetPath)?.GetT();
+        }
         
         public T GetAssetBundle<T>(string bundleName, string assetName) where T : Object
         {
@@ -271,6 +310,12 @@ namespace GameUtil
         {
             if (!TypeValidateWithLog(assetType)) return null;
             return (Object) GetPoolItem(assetType, LoadMode.Resource, null, assetPath)?.Get();
+        }
+        
+        public Object GetCustom(Type assetType, string assetPath)
+        {
+            if (!TypeValidateWithLog(assetType)) return null;
+            return (Object) GetPoolItem(assetType, LoadMode.Custom, null, assetPath)?.Get();
         }
         
         public Object GetAssetBundle(Type assetType, string bundleName, string assetName)
@@ -291,9 +336,9 @@ namespace GameUtil
         public void Dispose<T>(T obj, LoadMode loadMode, string bundleName, string assetName) where T : Object
         {
 #if UNITY_EDITOR
-            if(_onApplicationQuit) return;
+            if (_onApplicationQuit) return;
 #endif
-            if(!obj) return;
+            if (!obj) return;
             //如果是GameObject，做特殊处理
             if (obj is GameObject go)
                 DisposeGameObject(go);
@@ -310,9 +355,9 @@ namespace GameUtil
         public void DisposeGameObject(GameObject go)
         {
 #if UNITY_EDITOR
-            if(_onApplicationQuit) return;
+            if (_onApplicationQuit) return;
 #endif
-            if(!go) return;
+            if (!go) return;
             var dispose = go.GetComponent<ObjectPoolItemKey>();
             if (!dispose)
             {
@@ -405,11 +450,13 @@ namespace GameUtil
 
         private ObjectPoolItem<T> GetPoolItem<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
         {
-            ObjectPoolItem<T> poolItem;
+            ObjectPoolItem<T> poolItem = null;
             if (mPoolItems.TryGetValue(new PoolKey(typeof(T), loadMode, bundleName, assetName), out var poolItemBase))
                 poolItem = poolItemBase as ObjectPoolItem<T>;
-            else
+            else if (loadMode != LoadMode.Custom)
                 poolItem = CreatePoolItem<T>(loadMode, bundleName, assetName);
+            else
+                Debug.LogError("Cannot create Custom PoolItem automatically.");
             return poolItem;
         }
         
@@ -426,8 +473,12 @@ namespace GameUtil
         
         private PoolItemBase GetPoolItem(Type assetType, LoadMode loadMode, string bundleName, string assetName)
         {
-            if (!mPoolItems.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out var poolItemBase))
+            if (mPoolItems.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out var poolItemBase))
+                return poolItemBase;
+            if (loadMode != LoadMode.Custom)
                 poolItemBase = CreatePoolItem(assetType, loadMode, bundleName, assetName);
+            else
+                Debug.LogError("Cannot create Custom PoolItem automatically.");
             return poolItemBase;
         }
         

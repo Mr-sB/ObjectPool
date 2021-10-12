@@ -28,13 +28,13 @@ namespace GameUtil
         private readonly ObjectPool.LoadMode mLoadMode;
         private readonly string mBundleName;
         private readonly string mAssetName;
-        private readonly T m_ObjRes;//原始资源
         private readonly bool mIsGameObject;
         private readonly HashSet<int> mItemIDs;
         //链表，方便增删
         private readonly LinkedList<Item> mItems;
         private readonly List<ISpawnHandler> mSpawnHandlers;
         private readonly List<IDisposeHandler> mDisposeHandlers;
+        public T OriginAsset { private set; get; } //原始资源
         public override int ItemCount => mItems.Count;
 
         public ObjectPoolItem(ObjectPool.LoadMode loadMode, string bundleName, string assetName, DeleteTime deleteTime) : base(deleteTime)
@@ -45,36 +45,35 @@ namespace GameUtil
             mIsGameObject = typeof(T) == typeof(GameObject);
             mItemIDs = new HashSet<int>();
             mItems = new LinkedList<Item>();
-            switch (mLoadMode)
-            {
-                case ObjectPool.LoadMode.Resource:
-                    m_ObjRes = Resources.Load<T>(assetName);
-                    break;
-                // TODO: Add yourself AssetBundle load method
-                // case ObjectPool.LoadMode.AssetBundle:
-                //     m_ObjRes = AssetBundleManager.GetAsset<T>(bundleName, assetName);
-                //     break;
-                // MARK: Add yourself load methods
-            }
             if (mIsGameObject)
             {
                 mSpawnHandlers = new List<ISpawnHandler>();
                 mDisposeHandlers = new List<IDisposeHandler>();
-#if !UNITY_EDITOR
-                //直接添加在预制体上
-                if (m_ObjRes && m_ObjRes is GameObject go)
-                {
-                    var itemKey = go.GetComponent<ObjectPoolItemKey>();
-                    if(!itemKey)
-                        itemKey = go.AddComponent<ObjectPoolItemKey>();
-                    itemKey.Init(mLoadMode, mBundleName, mAssetName);
-                }
-#endif
             }
-            if (!m_ObjRes)
-                Debug.LogError("ObjectItem load asset is null! Type: " + typeof(T) + ", LoadMode: " + loadMode + ", BundleName: " + bundleName + ", AssetName: " + assetName);
+            switch (mLoadMode)
+            {
+                case ObjectPool.LoadMode.Resource:
+                    OriginAsset = Resources.Load<T>(assetName);
+                    break;
+                case ObjectPool.LoadMode.Custom:
+                    break;
+                // TODO: Add yourself AssetBundle load method
+                // case ObjectPool.LoadMode.AssetBundle:
+                //     OriginAsset = AssetBundleManager.GetAsset<T>(bundleName, assetName);
+                //     break;
+                // MARK: Add yourself load methods
+            }
+            //Custom pool will set origin asset after ctor.
+            if (mLoadMode != ObjectPool.LoadMode.Custom)
+                OnSetOriginAsset();
         }
 
+        public void SetOriginAsset(T originAsset)
+        {
+            OriginAsset = originAsset;
+            OnSetOriginAsset();
+        }
+        
         public override void Clear()
         {
             if (mIsGameObject)
@@ -98,7 +97,7 @@ namespace GameUtil
                 return;
             }
             int difference = size - mItems.Count;
-            if(difference == 0) return;
+            if (difference == 0) return;
             if (difference > 0)
             {
                 //Add
@@ -167,10 +166,10 @@ namespace GameUtil
 
         public void Dispose(T obj)
         {
-            if(!obj) return;
+            if (!obj) return;
             int id = obj.GetInstanceID();
             //防止重复放入对象池
-            if(mItemIDs.Contains(id)) return;
+            if (mItemIDs.Contains(id)) return;
             mItems.AddLast(new Item(obj, id, Time.realtimeSinceStartup));
             mItemIDs.Add(id);
             if (!mIsGameObject || !(obj is GameObject go)) return;
@@ -192,10 +191,10 @@ namespace GameUtil
                     {
                         var item = itemNode.Value;
                         //没到自动删除的时间，后面的也无需遍历了
-                        if(Time.realtimeSinceStartup - item.Time < mDeleteTime.AssetDeleteTime)
+                        if (Time.realtimeSinceStartup - item.Time < mDeleteTime.AssetDeleteTime)
                             break;
                         //需要被删除的资源
-                        if(item.Object)
+                        if (item.Object)
                             Object.Destroy(item.Object);
                         mItemIDs.Remove(item.InstanceID);
                         var toRemove = itemNode;
@@ -208,30 +207,49 @@ namespace GameUtil
                 }
             }
             //需要自动删除PoolItem
-            if (mDeleteTime.PoolItemDeleteTime >= 0 && mItems.Count <= 0)
+            if (mLoadMode != ObjectPool.LoadMode.Custom && mDeleteTime.PoolItemDeleteTime >= 0 && mItems.Count <= 0)
                 return Time.realtimeSinceStartup - mNullTime < mDeleteTime.PoolItemDeleteTime;
             return true;
         }
 
+        private void OnSetOriginAsset()
+        {
+#if !UNITY_EDITOR
+            if (mIsGameObject)
+            {
+                //直接添加在预制体上
+                if (OriginAsset && OriginAsset is GameObject go)
+                {
+                    var itemKey = go.GetComponent<ObjectPoolItemKey>();
+                    if (!itemKey)
+                        itemKey = go.AddComponent<ObjectPoolItemKey>();
+                    itemKey.Init(mLoadMode, mBundleName, mAssetName);
+                }
+            }
+#endif
+            if (!OriginAsset)
+                Debug.LogErrorFormat("ObjectItem load asset is null! Type: {0}, LoadMode: {1}, BundleName: {2}, AssetName: {3}", typeof(T), mLoadMode, mBundleName, mAssetName);
+        }
+        
         private T Spawn(Transform parent = null, bool callInterface = true)
         {
-            if (!m_ObjRes) return null;
+            if (!OriginAsset) return null;
             T obj;
-            if(mIsGameObject && parent)
-                obj = Object.Instantiate(m_ObjRes, parent);
+            if (mIsGameObject && parent)
+                obj = Object.Instantiate(OriginAsset, parent);
             else
-                obj = Object.Instantiate(m_ObjRes);
+                obj = Object.Instantiate(OriginAsset);
             if (!mIsGameObject || !(obj is GameObject go)) return obj;
             
             //GameObject类型需要多做一些处理
 #if UNITY_EDITOR
             //添加在实例对象上
             var itemKey = go.GetComponent<ObjectPoolItemKey>();
-            if(!itemKey)
+            if (!itemKey)
                 itemKey = go.AddComponent<ObjectPoolItemKey>();
             itemKey.Init(mLoadMode, mBundleName, mAssetName);
 #endif
-            if(callInterface)
+            if (callInterface)
                 OnGameObjectSpawn(go);
             return obj;
         }

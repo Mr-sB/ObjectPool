@@ -18,6 +18,7 @@ namespace GameUtil
 #if UNITY_EDITOR
                 if (_onApplicationQuit)
                 {
+                    // ReSharper disable once Unity.IncorrectMonoBehaviourInstantiation
                     return new T();
                 }
 #endif
