@@ -90,7 +90,7 @@ namespace GameUtil
             mItemIDs.Clear();
         }
 
-        public void Resize(int size, Transform parent)
+        public override void Resize(int size, Transform parent)
         {
             if (size <= 0)
             {
@@ -131,7 +131,12 @@ namespace GameUtil
             }
         }
 
-        public T Get()
+        public override object Get()
+        {
+            return GetT();
+        }
+        
+        public T GetT()
         {
             mNullTime = Time.realtimeSinceStartup;
             T obj = null;

@@ -128,10 +128,47 @@ namespace GameUtil
         }
         #endregion
 
+        #region TypeValidate
+        public static bool TypeValidate(Type assetType)
+        {
+            //IsSubclassOf会循环查找BaseType
+            return assetType.IsSubclassOf(typeof(Object));
+        }
+        
+        public static bool TypeValidateWithLog(Type assetType)
+        {
+            var success = TypeValidate(assetType);
+            if (!success)
+                Debug.LogErrorFormat("ObjectPool TypeValidate failed. Type: {0}", assetType);
+            return success;
+        }
+        #endregion
+        
         #region SetDeleteTime
         public void SetDeleteTime<T>(LoadMode loadMode, string bundleName, string assetName, float poolItemDeleteTime, float assetDeleteTime) where T : Object
         {
-            PoolKey poolKey = new PoolKey(typeof(T), loadMode, bundleName, assetName);
+            SetDeleteTime(typeof(T), loadMode, bundleName, assetName, poolItemDeleteTime, assetDeleteTime);
+        }
+        
+        public void SetPoolItemDeleteTime<T>(LoadMode loadMode, string bundleName, string assetName, float poolItemDeleteTime) where T : Object
+        {
+            SetPoolItemDeleteTime(typeof(T), loadMode, bundleName, assetName, poolItemDeleteTime);
+        }
+
+        public void SetAssetDeleteTime<T>(LoadMode loadMode, string bundleName, string assetName, float assetDeleteTime) where T : Object
+        {
+            SetAssetDeleteTime(typeof(T), loadMode, bundleName, assetName, assetDeleteTime);
+        }
+
+        public bool TryGetDeleteTime<T>(LoadMode loadMode, string bundleName, string assetName, out DeleteTime deleteTime) where T : Object
+        {
+            return TryGetDeleteTime(typeof(T), loadMode, bundleName, assetName, out deleteTime);
+        }
+
+        public void SetDeleteTime(Type assetType, LoadMode loadMode, string bundleName, string assetName, float poolItemDeleteTime, float assetDeleteTime)
+        {
+            if (!TypeValidateWithLog(assetType)) return;
+            PoolKey poolKey = new PoolKey(assetType, loadMode, bundleName, assetName);
             if (mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
             {
                 deleteTime.PoolItemDeleteTime = poolItemDeleteTime;
@@ -141,29 +178,36 @@ namespace GameUtil
                 AddDeleteTime(poolKey, new DeleteTime(poolItemDeleteTime, assetDeleteTime));
         }
         
-        public void SetPoolItemDeleteTime<T>(LoadMode loadMode, string bundleName, string assetName, float poolItemDeleteTime) where T : Object
+        public void SetPoolItemDeleteTime(Type assetType, LoadMode loadMode, string bundleName, string assetName, float poolItemDeleteTime)
         {
-            PoolKey poolKey = new PoolKey(typeof(T), loadMode, bundleName, assetName);
+            if (!TypeValidateWithLog(assetType)) return;
+            PoolKey poolKey = new PoolKey(assetType, loadMode, bundleName, assetName);
             if (mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
                 deleteTime.PoolItemDeleteTime = poolItemDeleteTime;
             else
                 AddDeleteTime(poolKey, new DeleteTime(poolItemDeleteTime, DEFAULT_ASSET_DELETE_TIME));
         }
 
-        public void SetAssetDeleteTime<T>(LoadMode loadMode, string bundleName, string assetName, float assetDeleteTime) where T : Object
+        public void SetAssetDeleteTime(Type assetType, LoadMode loadMode, string bundleName, string assetName, float assetDeleteTime)
         {
-            PoolKey poolKey = new PoolKey(typeof(T), loadMode, bundleName, assetName);
+            if (!TypeValidateWithLog(assetType)) return;
+            PoolKey poolKey = new PoolKey(assetType, loadMode, bundleName, assetName);
             if (mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
                 deleteTime.AssetDeleteTime = assetDeleteTime;
             else
                 AddDeleteTime(poolKey, new DeleteTime(DEFAULT_POOL_ITEM_DELETE_TIME, assetDeleteTime));
         }
 
-        public bool TryGetDeleteTime<T>(LoadMode loadMode, string bundleName, string assetName, out DeleteTime deleteTime) where T : Object
+        public bool TryGetDeleteTime(Type assetType, LoadMode loadMode, string bundleName, string assetName, out DeleteTime deleteTime)
         {
-            return mDeleteTimes.TryGetValue(new PoolKey(typeof(T), loadMode, bundleName, assetName), out deleteTime);
+            if (!TypeValidateWithLog(assetType))
+            {
+                deleteTime = null;
+                return false;
+            }
+            return mDeleteTimes.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out deleteTime);
         }
-
+        
         private void AddDeleteTime(PoolKey poolKey, DeleteTime deleteTime)
         {
             mDeleteTimes.Add(poolKey, deleteTime);
@@ -209,18 +253,37 @@ namespace GameUtil
         #region Get
         public T GetResources<T>(string assetPath) where T : Object
         {
-            return GetPoolItem<T>(LoadMode.Resource, null, assetPath).Get();
+            return GetPoolItem<T>(LoadMode.Resource, null, assetPath)?.GetT();
         }
         
         public T GetAssetBundle<T>(string bundleName, string assetName) where T : Object
         {
-            return GetPoolItem<T>(LoadMode.AssetBundle, bundleName, assetName).Get();
+            return GetPoolItem<T>(LoadMode.AssetBundle, bundleName, assetName)?.GetT();
         }
         // MARK: Add yourself load methods
 
         public T Get<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
         {
-            return GetPoolItem<T>(loadMode, bundleName, assetName).Get();
+            return GetPoolItem<T>(loadMode, bundleName, assetName)?.GetT();
+        }
+        
+        public Object GetResources(Type assetType, string assetPath)
+        {
+            if (!TypeValidateWithLog(assetType)) return null;
+            return (Object) GetPoolItem(assetType, LoadMode.Resource, null, assetPath)?.Get();
+        }
+        
+        public Object GetAssetBundle(Type assetType, string bundleName, string assetName)
+        {
+            if (!TypeValidateWithLog(assetType)) return null;
+            return (Object) GetPoolItem(assetType, LoadMode.AssetBundle, bundleName, assetName)?.Get();
+        }
+        // MARK: Add yourself load methods
+
+        public Object Get(Type assetType, LoadMode loadMode, string bundleName, string assetName)
+        {
+            if (!TypeValidateWithLog(assetType)) return null;
+            return (Object) GetPoolItem(assetType, loadMode, bundleName, assetName)?.Get();
         }
         #endregion
 
@@ -235,7 +298,13 @@ namespace GameUtil
             if (obj is GameObject go)
                 DisposeGameObject(go);
             else
-                GetPoolItem<T>(loadMode, bundleName, assetName).Dispose(obj);
+            {
+                var poolItem = GetPoolItem<T>(loadMode, bundleName, assetName);
+                if (poolItem != null)
+                    poolItem.Dispose(obj);
+                else
+                    Destroy(obj);
+            }
         }
         
         public void DisposeGameObject(GameObject go)
@@ -254,26 +323,24 @@ namespace GameUtil
             go.SetActive(false);
             go.transform.SetParent(transform);
             
-            GetPoolItem<GameObject>(dispose.LoadMode, dispose.BundleName, dispose.AssetName).Dispose(go);
+            var poolItem = GetPoolItem<GameObject>(dispose.LoadMode, dispose.BundleName, dispose.AssetName);
+            if (poolItem != null)
+                poolItem.Dispose(go);
+            else
+                Destroy(go);
         }
         #endregion
 
         #region Clear
         public void Clear<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
         {
-            ClearInternal(typeof(T), loadMode, bundleName, assetName);
+            Clear(typeof(T), loadMode, bundleName, assetName);
         }
         
-        public void Clear(Type type, LoadMode loadMode, string bundleName, string assetName)
+        public void Clear(Type assetType, LoadMode loadMode, string bundleName, string assetName)
         {
-            //IsSubclassOf会循环查找BaseType
-            if(!type.IsSubclassOf(typeof(Object))) return;
-            ClearInternal(type, loadMode, bundleName, assetName);
-        }
-
-        private void ClearInternal(Type type, LoadMode loadMode, string bundleName, string assetName)
-        {
-            PoolKey poolKey = new PoolKey(type, loadMode, bundleName, assetName);
+            if (!TypeValidateWithLog(assetType)) return;
+            PoolKey poolKey = new PoolKey(assetType, loadMode, bundleName, assetName);
             if (mPoolItems.TryGetValue(poolKey, out var poolItem))
             {
                 mPoolKeys.Remove(poolKey);
@@ -294,12 +361,24 @@ namespace GameUtil
 
         public int GetItemCount<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
         {
-            return mPoolItems.TryGetValue(new PoolKey(typeof(T), loadMode, bundleName, assetName), out var poolItemBase) ? poolItemBase.ItemCount : 0;
+            return GetItemCount(typeof(T), loadMode, bundleName, assetName);
+        }
+        
+        public int GetItemCount(Type assetType, LoadMode loadMode, string bundleName, string assetName)
+        {
+            if (!TypeValidateWithLog(assetType)) return 0;
+            return mPoolItems.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out var poolItemBase) ? poolItemBase.ItemCount : 0;
         }
 
         public void Resize<T>(LoadMode loadMode, string bundleName, string assetName, int size) where T : Object
         {
-            GetPoolItem<T>(loadMode, bundleName, assetName).Resize(size, transform);
+            GetPoolItem<T>(loadMode, bundleName, assetName)?.Resize(size, transform);
+        }
+        
+        public void Resize(Type assetType, LoadMode loadMode, string bundleName, string assetName, int size)
+        {
+            if (!TypeValidateWithLog(assetType)) return;
+            GetPoolItem(assetType, loadMode, bundleName, assetName)?.Resize(size, transform);
         }
 
         private void Update()
@@ -340,6 +419,25 @@ namespace GameUtil
             if (!mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
                 deleteTime = mDefaultDeleteTime;
             var poolItem = new ObjectPoolItem<T>(loadMode, bundleName, assetName, deleteTime);
+            mPoolKeys.Add(poolKey);
+            mPoolItems.Add(poolKey, poolItem);
+            return poolItem;
+        }
+        
+        private PoolItemBase GetPoolItem(Type assetType, LoadMode loadMode, string bundleName, string assetName)
+        {
+            if (!mPoolItems.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out var poolItemBase))
+                poolItemBase = CreatePoolItem(assetType, loadMode, bundleName, assetName);
+            return poolItemBase;
+        }
+        
+        private PoolItemBase CreatePoolItem(Type assetType, LoadMode loadMode, string bundleName, string assetName)
+        {
+            PoolKey poolKey = new PoolKey(assetType, loadMode, bundleName, assetName);
+            if (!mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
+                deleteTime = mDefaultDeleteTime;
+            var poolItem = (PoolItemBase) Activator.CreateInstance(
+                typeof(ObjectPoolItem<>).MakeGenericType(assetType), loadMode, bundleName, assetName, deleteTime);
             mPoolKeys.Add(poolKey);
             mPoolItems.Add(poolKey, poolItem);
             return poolItem;

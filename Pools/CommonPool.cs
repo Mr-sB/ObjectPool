@@ -62,7 +62,7 @@ namespace GameUtil
         
         public T Get<T>() where T : class, new()
         {
-            return GetPoolItem<T>().Get();
+            return GetPoolItem<T>().GetT();
         }
         
         public void Dispose<T>(T obj) where T : class, new()

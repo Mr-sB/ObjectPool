@@ -16,7 +16,9 @@ namespace GameUtil
         }
         
         public abstract int ItemCount { get; }
+        public abstract object Get();
         public abstract bool Update();
+        public abstract void Resize(int size, UnityEngine.Transform parent);
         public abstract void Clear();
     }
 }
