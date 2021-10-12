@@ -220,10 +220,10 @@ namespace GameUtil
         #region CustomRegister
         public void RegisterCustomPoolItem<T>(string assetPath, T originAsset) where T : Object
         {
-            var assetKey = new PoolKey(typeof(T), LoadMode.Custom, null, assetPath);
+            var poolKey = new PoolKey(typeof(T), LoadMode.Custom, null, assetPath);
             ObjectPoolItem<T> poolItem = null;
             bool createNewPoolItem = false;
-            if (mPoolItems.TryGetValue(assetKey, out var poolItemBase))
+            if (mPoolItems.TryGetValue(poolKey, out var poolItemBase))
             {
                 poolItem = poolItemBase as ObjectPoolItem<T>;
                 //Not match, clear and create new pool item.
@@ -231,7 +231,8 @@ namespace GameUtil
                 {
                     createNewPoolItem = true;
                     poolItemBase.Clear();
-                    mPoolItems.Remove(assetKey);
+                    mPoolItems.Remove(poolKey);
+                    mPoolKeys.Remove(poolKey);
                 }
                 else if (poolItem.OriginAsset != originAsset)
                 {
