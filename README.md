@@ -19,8 +19,8 @@ public interface IDisposeHandler
 ```
 Or you can add listener from `ObjectPoolItemKey.SpawnEvent` and `ObjectPoolItemKey.DisposeEvent`.
 ```c#
-public event Action SpawnEvent;
-public event Action DisposeEvent;
+public event Action<ObjectPoolItemKey> SpawnEvent;
+public event Action<ObjectPoolItemKey> DisposeEvent;
 ```
 * The `ObjectPool` basically does not consume extra memory and GC.
 

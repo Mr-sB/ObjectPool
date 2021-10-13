@@ -13,8 +13,8 @@ namespace GameUtil
         public string BundleName => mBundleName;
         public string AssetName => mAssetName;
 
-        public event Action SpawnEvent;
-        public event Action DisposeEvent;
+        public event Action<ObjectPoolItemKey> SpawnEvent;
+        public event Action<ObjectPoolItemKey> DisposeEvent;
         
         public void Init(ObjectPool.LoadMode loadMode, string bundleName, string assetName)
         {
@@ -28,7 +28,7 @@ namespace GameUtil
             if (SpawnEvent == null) return;
             try
             {
-                SpawnEvent();
+                SpawnEvent(this);
             }
             catch (Exception e)
             {
@@ -41,7 +41,7 @@ namespace GameUtil
             if (DisposeEvent == null) return;
             try
             {
-                DisposeEvent();
+                DisposeEvent(this);
             }
             catch (Exception e)
             {
