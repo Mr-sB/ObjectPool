@@ -13,8 +13,8 @@ namespace GameUtil
         //DeleteTime
         private readonly Dictionary<Type, DeleteTime> mDeleteTimes = new Dictionary<Type, DeleteTime>();
         private readonly DeleteTime mDefaultDeleteTime = new DeleteTime(DEFAULT_POOL_ITEM_DELETE_TIME, DEFAULT_ASSET_DELETE_TIME);
-        public const float DEFAULT_POOL_ITEM_DELETE_TIME = 30;
-        public const float DEFAULT_ASSET_DELETE_TIME = 30;
+        public static float DEFAULT_POOL_ITEM_DELETE_TIME = 120;
+        public static float DEFAULT_ASSET_DELETE_TIME = 120;
         
         #region SetDeleteTime
         public void SetDeleteTime<T>(float poolItemDeleteTime, float assetDeleteTime) where T : class, new()

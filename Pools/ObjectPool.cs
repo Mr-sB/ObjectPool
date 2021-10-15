@@ -73,8 +73,8 @@ namespace GameUtil
         //DeleteTime
         private readonly Dictionary<PoolKey, DeleteTime> mDeleteTimes = new Dictionary<PoolKey, DeleteTime>();
         private readonly DeleteTime mDefaultDeleteTime = new DeleteTime(DEFAULT_POOL_ITEM_DELETE_TIME, DEFAULT_ASSET_DELETE_TIME);
-        public const float DEFAULT_POOL_ITEM_DELETE_TIME = 30;
-        public const float DEFAULT_ASSET_DELETE_TIME = 30;
+        public static float DEFAULT_POOL_ITEM_DELETE_TIME = 120;
+        public static float DEFAULT_ASSET_DELETE_TIME = 120;
         
         public const string DEFAULT_PREFAB_ROOT_PATH = "Prefabs/View/";
         public const string DEFAULT_GAME_PATH = "Prefabs/Game/";
