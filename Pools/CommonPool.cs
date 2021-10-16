@@ -67,7 +67,7 @@ namespace GameUtil
         
         public void Dispose<T>(T obj) where T : class, new()
         {
-            if(obj == null) return;
+            if (obj == null) return;
             GetPoolItem<T>().Dispose(obj);
         }
         
@@ -79,7 +79,7 @@ namespace GameUtil
         
         public void Clear(Type type)
         {
-            if(!type.IsClass) return;
+            if (!type.IsClass) return;
             ClearInternal(type);
         }
 

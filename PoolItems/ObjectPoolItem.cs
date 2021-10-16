@@ -265,8 +265,7 @@ namespace GameUtil
             }
             else
             {
-                spawnHandlers = CommonPool.Instance.Get<List<ISpawnHandler>>();
-                spawnHandlers.Clear();
+                spawnHandlers = ListPool<ISpawnHandler>.Get();
                 needDispose = true;
             }
             go.GetComponentsInChildren(spawnHandlers);
@@ -279,11 +278,11 @@ namespace GameUtil
                 var lastHandler = spawnHandlers[spawnHandlers.Count - 1];
                 spawnHandlers.Clear();
                 if (needDispose)
-                    CommonPool.Instance.Dispose(spawnHandlers);
+                    ListPool<ISpawnHandler>.Dispose(spawnHandlers);
                 lastHandler.OnSpawn();
             }
             else if (needDispose)
-                CommonPool.Instance.Dispose(spawnHandlers);
+                ListPool<ISpawnHandler>.Dispose(spawnHandlers);
         }
 
         private void OnGameObjectDispose(GameObject go)
@@ -297,8 +296,7 @@ namespace GameUtil
             }
             else
             {
-                disposeHandlers = CommonPool.Instance.Get<List<IDisposeHandler>>();
-                disposeHandlers.Clear();
+                disposeHandlers = ListPool<IDisposeHandler>.Get();
                 needDispose = true;
             }
             go.GetComponentsInChildren(disposeHandlers);
@@ -311,11 +309,11 @@ namespace GameUtil
                 var lastHandler = disposeHandlers[disposeHandlers.Count - 1];
                 disposeHandlers.Clear();
                 if (needDispose)
-                    CommonPool.Instance.Dispose(disposeHandlers);
+                    ListPool<IDisposeHandler>.Dispose(disposeHandlers);
                 lastHandler.OnDispose();
             }
             else if (needDispose)
-                CommonPool.Instance.Dispose(disposeHandlers);
+                ListPool<IDisposeHandler>.Dispose(disposeHandlers);
         }
     }
 }

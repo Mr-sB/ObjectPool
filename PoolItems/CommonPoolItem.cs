@@ -29,7 +29,7 @@ namespace GameUtil
         {
             mItems = new LinkedList<Item>();
         }
-
+        
         public static void SetHandlers(Action<T> spawnHandler, Action<T> disposeHandler)
         {
             SetSpawnHandler(spawnHandler);
@@ -64,7 +64,7 @@ namespace GameUtil
                 return;
             }
             int difference = size - mItems.Count;
-            if(difference == 0) return;
+            if (difference == 0) return;
             if (difference > 0)
             {
                 //Add
@@ -107,7 +107,14 @@ namespace GameUtil
         public void Dispose(T obj)
         {
             if (obj == null) return;
-            mDisposeHandler?.Invoke(obj);
+            try
+            {
+                mDisposeHandler?.Invoke(obj);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
             mItems.AddLast(new Item(obj, Time.realtimeSinceStartup));
         }
 
@@ -124,7 +131,7 @@ namespace GameUtil
                     {
                         var item = itemNode.Value;
                         //没到自动删除的时间，后面的也无需遍历了
-                        if(Time.realtimeSinceStartup - item.Time < mDeleteTime.AssetDeleteTime)
+                        if (Time.realtimeSinceStartup - item.Time < mDeleteTime.AssetDeleteTime)
                             break;
                         //需要被删除的资源
                         var toRemove = itemNode;
@@ -142,10 +149,18 @@ namespace GameUtil
             return true;
         }
 
-        private T Spawn()
+        private static T Spawn()
         {
-            T obj = new T();
-            mSpawnHandler?.Invoke(obj);
+            var obj = new T();
+            try
+            {
+                mSpawnHandler?.Invoke(obj);
+                return obj;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
             return obj;
         }
     }
