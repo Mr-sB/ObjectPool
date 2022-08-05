@@ -1,30 +1,33 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace GameUtil
 {
-    public class ObjectPoolItem<T> : PoolItemBase where T : Object
+    public class ObjectPoolItem : PoolItemBase
     {
         public struct Item
         {
-            public readonly T Object;
+            public readonly Object Object;
             public readonly int InstanceID;
             public readonly float Time;
 
-            public Item(T obj, float time)
+            public Item(Object obj, float time)
             {
                 Object = obj;
                 InstanceID = obj.GetInstanceID();
                 Time = time;
             }
             
-            public Item(T obj, int instanceID, float time)
+            public Item(Object obj, int instanceID, float time)
             {
                 Object = obj;
                 InstanceID = instanceID;
                 Time = time;
             }
         }
+        private readonly Type mAssetType;
         private readonly ObjectPool.LoadMode mLoadMode;
         private readonly string mBundleName;
         private readonly string mAssetName;
@@ -34,15 +37,16 @@ namespace GameUtil
         private readonly LinkedList<Item> mItems;
         private readonly List<ISpawnHandler> mSpawnHandlers;
         private readonly List<IDisposeHandler> mDisposeHandlers;
-        public T OriginAsset { private set; get; } //原始资源
+        public Object OriginAsset { private set; get; } //原始资源
         public override int ItemCount => mItems.Count;
 
-        public ObjectPoolItem(ObjectPool.LoadMode loadMode, string bundleName, string assetName, DeleteTime deleteTime) : base(deleteTime)
+        public ObjectPoolItem(Type assetType, ObjectPool.LoadMode loadMode, string bundleName, string assetName, DeleteTime deleteTime) : base(deleteTime)
         {
+            mAssetType = assetType;
             mLoadMode = loadMode;
             mBundleName = bundleName;
             mAssetName = assetName;
-            mIsGameObject = typeof(T) == typeof(GameObject);
+            mIsGameObject = assetType == typeof(GameObject);
             mItemIDs = new HashSet<int>();
             mItems = new LinkedList<Item>();
             if (mIsGameObject)
@@ -53,13 +57,13 @@ namespace GameUtil
             switch (mLoadMode)
             {
                 case ObjectPool.LoadMode.Resource:
-                    OriginAsset = Resources.Load<T>(assetName);
+                    OriginAsset = Resources.Load(assetName, assetType);
                     break;
                 case ObjectPool.LoadMode.Custom:
                     break;
                 // TODO: Add yourself AssetBundle load method
                 // case ObjectPool.LoadMode.AssetBundle:
-                //     OriginAsset = AssetBundleManager.GetAsset<T>(bundleName, assetName);
+                //     OriginAsset = AssetBundleManager.GetAsset(assetType, bundleName, assetName);
                 //     break;
                 // MARK: Add yourself load methods
             }
@@ -68,7 +72,7 @@ namespace GameUtil
                 OnSetOriginAsset();
         }
 
-        public void SetOriginAsset(T originAsset)
+        public void SetOriginAsset(Object originAsset)
         {
             OriginAsset = originAsset;
             OnSetOriginAsset();
@@ -132,13 +136,13 @@ namespace GameUtil
 
         public override object Get()
         {
-            return GetT();
+            return GetObj();
         }
         
-        public T GetT()
+        public Object GetObj()
         {
             mNullTime = Time.realtimeSinceStartup;
-            T obj = null;
+            Object obj = null;
             if (mItems.Count <= 0)
                 return Spawn();
             //倒序遍历，手动维护一个栈(Stack)，先进后出，保证前面的对象尽量不被使用，方便删除这些资源
@@ -164,7 +168,7 @@ namespace GameUtil
             return obj;
         }
 
-        public void Dispose(T obj)
+        public void Dispose(Object obj)
         {
             if (!obj) return;
             int id = obj.GetInstanceID();
@@ -229,13 +233,13 @@ namespace GameUtil
 //             }
 // #endif
             if (!OriginAsset)
-                Debug.LogErrorFormat("ObjectItem load asset is null! Type: {0}, LoadMode: {1}, BundleName: {2}, AssetName: {3}", typeof(T), mLoadMode, mBundleName, mAssetName);
+                Debug.LogErrorFormat("ObjectItem load asset is null! Type: {0}, LoadMode: {1}, BundleName: {2}, AssetName: {3}", mAssetType, mLoadMode, mBundleName, mAssetName);
         }
         
-        private T Spawn(Transform parent = null, bool callInterface = true)
+        private Object Spawn(Transform parent = null, bool callInterface = true)
         {
             if (!OriginAsset) return null;
-            T obj;
+            Object obj;
             if (mIsGameObject && parent)
                 obj = Object.Instantiate(OriginAsset, parent);
             else

@@ -68,7 +68,7 @@ namespace GameUtil
         }
 
         //对象池。type + path + load mode => PoolItem
-        private readonly Dictionary<PoolKey, PoolItemBase> mPoolItems = new Dictionary<PoolKey, PoolItemBase>();
+        private readonly Dictionary<PoolKey, ObjectPoolItem> mPoolItems = new Dictionary<PoolKey, ObjectPoolItem>();
         private readonly List<PoolKey> mToDeletePoolKeys = new List<PoolKey>();
         //DeleteTime
         private readonly Dictionary<PoolKey, DeleteTime> mDeleteTimes = new Dictionary<PoolKey, DeleteTime>();
@@ -210,28 +210,25 @@ namespace GameUtil
         private void AddDeleteTime(PoolKey poolKey, DeleteTime deleteTime)
         {
             mDeleteTimes.Add(poolKey, deleteTime);
-            if (mPoolItems.TryGetValue(poolKey, out var poolItemBase))
-                poolItemBase.SetDeleteTime(deleteTime);
+            if (mPoolItems.TryGetValue(poolKey, out var poolItem))
+                poolItem.SetDeleteTime(deleteTime);
         }
         #endregion
 
         #region CustomRegister
         public void RegisterCustomPoolItem<T>(string assetPath, T originAsset) where T : Object
         {
-            var poolKey = new PoolKey(typeof(T), LoadMode.Custom, null, assetPath);
-            ObjectPoolItem<T> poolItem = null;
+            RegisterCustomPoolItem(typeof(T), assetPath, originAsset);
+        }
+        
+        public void RegisterCustomPoolItem(Type assetType, string assetPath, Object originAsset)
+        {
+            if (!originAsset) return;
+            var poolKey = new PoolKey(assetType, LoadMode.Custom, null, assetPath);
             bool createNewPoolItem = false;
-            if (mPoolItems.TryGetValue(poolKey, out var poolItemBase))
+            if (mPoolItems.TryGetValue(poolKey, out var poolItem))
             {
-                poolItem = poolItemBase as ObjectPoolItem<T>;
-                //Not match, clear and create new pool item.
-                if (poolItem == null)
-                {
-                    createNewPoolItem = true;
-                    poolItemBase.Clear();
-                    mPoolItems.Remove(poolKey);
-                }
-                else if (poolItem.OriginAsset != originAsset)
+                if (poolItem.OriginAsset != originAsset)
                 {
                     poolItem.Clear();
                     poolItem.SetOriginAsset(originAsset);
@@ -242,7 +239,7 @@ namespace GameUtil
 
             if (createNewPoolItem)
             {
-                poolItem = CreatePoolItem<T>(LoadMode.Custom, null, assetPath);
+                poolItem = CreatePoolItem(assetType, LoadMode.Custom, null, assetPath);
                 poolItem.SetOriginAsset(originAsset);
             }
         }
@@ -285,48 +282,48 @@ namespace GameUtil
         #region Get
         public T GetResources<T>(string assetPath) where T : Object
         {
-            return GetPoolItem<T>(LoadMode.Resource, null, assetPath)?.GetT();
+            return GetPoolItem<T>(LoadMode.Resource, null, assetPath)?.GetObj() as T;
         }
 
         public T GetCustom<T>(string assetPath) where T : Object
         {
-            return GetPoolItem<T>(LoadMode.Custom, null, assetPath)?.GetT();
+            return GetPoolItem<T>(LoadMode.Custom, null, assetPath)?.GetObj() as T;
         }
         
         public T GetAssetBundle<T>(string bundleName, string assetName) where T : Object
         {
-            return GetPoolItem<T>(LoadMode.AssetBundle, bundleName, assetName)?.GetT();
+            return GetPoolItem<T>(LoadMode.AssetBundle, bundleName, assetName)?.GetObj() as T;
         }
         // MARK: Add yourself load methods
 
         public T Get<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
         {
-            return GetPoolItem<T>(loadMode, bundleName, assetName)?.GetT();
+            return GetPoolItem<T>(loadMode, bundleName, assetName)?.GetObj() as T;
         }
         
         public Object GetResources(Type assetType, string assetPath)
         {
             if (!TypeValidateWithLog(assetType)) return null;
-            return (Object) GetPoolItem(assetType, LoadMode.Resource, null, assetPath)?.Get();
+            return GetPoolItem(assetType, LoadMode.Resource, null, assetPath)?.GetObj();
         }
         
         public Object GetCustom(Type assetType, string assetPath)
         {
             if (!TypeValidateWithLog(assetType)) return null;
-            return (Object) GetPoolItem(assetType, LoadMode.Custom, null, assetPath)?.Get();
+            return GetPoolItem(assetType, LoadMode.Custom, null, assetPath)?.GetObj();
         }
         
         public Object GetAssetBundle(Type assetType, string bundleName, string assetName)
         {
             if (!TypeValidateWithLog(assetType)) return null;
-            return (Object) GetPoolItem(assetType, LoadMode.AssetBundle, bundleName, assetName)?.Get();
+            return GetPoolItem(assetType, LoadMode.AssetBundle, bundleName, assetName)?.GetObj();
         }
         // MARK: Add yourself load methods
 
         public Object Get(Type assetType, LoadMode loadMode, string bundleName, string assetName)
         {
             if (!TypeValidateWithLog(assetType)) return null;
-            return (Object) GetPoolItem(assetType, loadMode, bundleName, assetName)?.Get();
+            return GetPoolItem(assetType, loadMode, bundleName, assetName)?.GetObj();
         }
         #endregion
 
@@ -343,6 +340,26 @@ namespace GameUtil
             else
             {
                 var poolItem = GetPoolItem<T>(loadMode, bundleName, assetName);
+                if (poolItem != null)
+                    poolItem.Dispose(obj);
+                else
+                    Destroy(obj);
+            }
+        }
+        
+        public void Dispose(Type assetType, Object obj, LoadMode loadMode, string bundleName, string assetName)
+        {
+#if UNITY_EDITOR
+            if (_onApplicationQuit) return;
+#endif
+            if (!obj) return;
+            if (!TypeValidateWithLog(assetType)) return;
+            //如果是GameObject，做特殊处理
+            if (obj is GameObject go)
+                DisposeGameObject(go);
+            else
+            {
+                var poolItem = GetPoolItem(assetType, loadMode, bundleName, assetName);
                 if (poolItem != null)
                     poolItem.Dispose(obj);
                 else
@@ -408,7 +425,7 @@ namespace GameUtil
         public int GetItemCount(Type assetType, LoadMode loadMode, string bundleName, string assetName)
         {
             if (!TypeValidateWithLog(assetType)) return 0;
-            return mPoolItems.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out var poolItemBase) ? poolItemBase.ItemCount : 0;
+            return mPoolItems.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out var poolItem) ? poolItem.ItemCount : 0;
         }
 
         public void Resize<T>(LoadMode loadMode, string bundleName, string assetName, int size) where T : Object
@@ -441,46 +458,33 @@ namespace GameUtil
             }
         }
 
-        private ObjectPoolItem<T> GetPoolItem<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
+        private ObjectPoolItem GetPoolItem<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
         {
-            ObjectPoolItem<T> poolItem = null;
-            if (mPoolItems.TryGetValue(new PoolKey(typeof(T), loadMode, bundleName, assetName), out var poolItemBase))
-                poolItem = poolItemBase as ObjectPoolItem<T>;
-            else if (loadMode != LoadMode.Custom)
-                poolItem = CreatePoolItem<T>(loadMode, bundleName, assetName);
-            else
-                Debug.LogError("Cannot create Custom PoolItem automatically.");
-            return poolItem;
+            return GetPoolItem(typeof(T), loadMode, bundleName, assetName);
         }
         
-        private ObjectPoolItem<T> CreatePoolItem<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
+        private ObjectPoolItem CreatePoolItem<T>(LoadMode loadMode, string bundleName, string assetName) where T : Object
         {
-            PoolKey poolKey = new PoolKey(typeof(T), loadMode, bundleName, assetName);
-            if (!mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
-                deleteTime = mDefaultDeleteTime;
-            var poolItem = new ObjectPoolItem<T>(loadMode, bundleName, assetName, deleteTime);
-            mPoolItems.Add(poolKey, poolItem);
-            return poolItem;
+            return CreatePoolItem(typeof(T), loadMode, bundleName, assetName);
         }
         
-        private PoolItemBase GetPoolItem(Type assetType, LoadMode loadMode, string bundleName, string assetName)
+        private ObjectPoolItem GetPoolItem(Type assetType, LoadMode loadMode, string bundleName, string assetName)
         {
-            if (mPoolItems.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out var poolItemBase))
-                return poolItemBase;
+            if (mPoolItems.TryGetValue(new PoolKey(assetType, loadMode, bundleName, assetName), out var poolItem))
+                return poolItem;
             if (loadMode != LoadMode.Custom)
-                poolItemBase = CreatePoolItem(assetType, loadMode, bundleName, assetName);
+                poolItem = CreatePoolItem(assetType, loadMode, bundleName, assetName);
             else
                 Debug.LogError("Cannot create Custom PoolItem automatically.");
-            return poolItemBase;
+            return poolItem;
         }
         
-        private PoolItemBase CreatePoolItem(Type assetType, LoadMode loadMode, string bundleName, string assetName)
+        private ObjectPoolItem CreatePoolItem(Type assetType, LoadMode loadMode, string bundleName, string assetName)
         {
             PoolKey poolKey = new PoolKey(assetType, loadMode, bundleName, assetName);
             if (!mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
                 deleteTime = mDefaultDeleteTime;
-            var poolItem = (PoolItemBase) Activator.CreateInstance(
-                typeof(ObjectPoolItem<>).MakeGenericType(assetType), loadMode, bundleName, assetName, deleteTime);
+            var poolItem = new ObjectPoolItem(assetType, loadMode, bundleName, assetName, deleteTime);
             mPoolItems.Add(poolKey, poolItem);
             return poolItem;
         }
