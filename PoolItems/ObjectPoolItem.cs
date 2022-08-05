@@ -214,19 +214,20 @@ namespace GameUtil
 
         private void OnSetOriginAsset()
         {
-#if !UNITY_EDITOR
-            if (mIsGameObject)
-            {
-                //直接添加在预制体上
-                if (OriginAsset && OriginAsset is GameObject go)
-                {
-                    var itemKey = go.GetComponent<ObjectPoolItemKey>();
-                    if (!itemKey)
-                        itemKey = go.AddComponent<ObjectPoolItemKey>();
-                    itemKey.Init(mLoadMode, mBundleName, mAssetName);
-                }
-            }
-#endif
+            //不能直接在预制体上添加脚本，否则资源卸载时可能崩溃
+// #if !UNITY_EDITOR
+//             if (mIsGameObject)
+//             {
+//                 //直接添加在预制体上
+//                 if (OriginAsset && OriginAsset is GameObject go)
+//                 {
+//                     var itemKey = go.GetComponent<ObjectPoolItemKey>();
+//                     if (!itemKey)
+//                         itemKey = go.AddComponent<ObjectPoolItemKey>();
+//                     itemKey.Init(mLoadMode, mBundleName, mAssetName);
+//                 }
+//             }
+// #endif
             if (!OriginAsset)
                 Debug.LogErrorFormat("ObjectItem load asset is null! Type: {0}, LoadMode: {1}, BundleName: {2}, AssetName: {3}", typeof(T), mLoadMode, mBundleName, mAssetName);
         }
@@ -242,13 +243,13 @@ namespace GameUtil
             if (!mIsGameObject || !(obj is GameObject go)) return obj;
             
             //GameObject类型需要多做一些处理
-#if UNITY_EDITOR
+// #if UNITY_EDITOR
             //添加在实例对象上
             var itemKey = go.GetComponent<ObjectPoolItemKey>();
             if (!itemKey)
                 itemKey = go.AddComponent<ObjectPoolItemKey>();
             itemKey.Init(mLoadMode, mBundleName, mAssetName);
-#endif
+// #endif
             if (callInterface)
                 OnGameObjectSpawn(go);
             return obj;
