@@ -29,19 +29,19 @@ public event Action<ObjectPoolItemKey> DisposeEvent;
 # Note
 * If you want to cache Object from `AssetBundle`, maybe you can use [AssetBundleManager](https://github.com/Mr-sB/AssetBundleManager)(Open source) to manage your AssetBundles.
 ```c#
-public ObjectPoolItem(ObjectPool.LoadMode loadMode, string bundleName, string assetName, DeleteTime deleteTime) : base(deleteTime)
+public ObjectPoolItem(Type assetType, ObjectPool.LoadMode loadMode, string bundleName, string assetName, DeleteTime deleteTime) : base(deleteTime)
 {
     ...
     switch (mLoadMode)
     {
         case ObjectPool.LoadMode.Resource:
-            OriginAsset = Resources.Load<T>(assetName);
+            OriginAsset = Resources.Load(assetName, assetType);
             break;
         case ObjectPool.LoadMode.Custom:
             break;
         // MARK: Use AssetBundleManager to load asset.
         case ObjectPool.LoadMode.AssetBundle:
-            OriginAsset = AssetBundleManager.GetAsset<T>(bundleName, assetName);
+            OriginAsset = AssetBundleManager.GetAsset(assetType, bundleName, assetName);
             break;
         // MARK: Add yourself load methods
     }
