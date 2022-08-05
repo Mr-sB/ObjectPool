@@ -7,8 +7,6 @@ namespace GameUtil
     {
         //对象池。type => PoolItem
         private readonly Dictionary<Type, PoolItemBase> mPoolItems = new Dictionary<Type, PoolItemBase>();
-        //HashSet方便删除
-        private readonly HashSet<Type> mPoolKeys = new HashSet<Type>();
         private readonly List<Type> mToDeletePoolKeys = new List<Type>();
         //DeleteTime
         private readonly Dictionary<Type, DeleteTime> mDeleteTimes = new Dictionary<Type, DeleteTime>();
@@ -87,7 +85,6 @@ namespace GameUtil
         {
             if (mPoolItems.TryGetValue(type, out var poolItem))
             {
-                mPoolKeys.Remove(type);
                 poolItem.Clear();
                 mPoolItems.Remove(type);
             }
@@ -95,7 +92,6 @@ namespace GameUtil
         
         public void ClearAll()
         {
-            mPoolKeys.Clear();
             mToDeletePoolKeys.Clear();
             foreach (var poolItem in mPoolItems.Values)
                 poolItem.Clear();
@@ -115,22 +111,19 @@ namespace GameUtil
         
         private void Update()
         {
-            if (mPoolKeys.Count > 0)
+            if (mPoolItems.Count > 0)
             {
-                foreach (var key in mPoolKeys)
+                foreach (var pair in mPoolItems)
                 {
-                    if (!mPoolItems[key].Update())
-                    {
-                        mPoolItems.Remove(key);
-                        mToDeletePoolKeys.Add(key);
-                    }
+                    if (!pair.Value.Update())
+                        mToDeletePoolKeys.Add(pair.Key);
                 }
             }
 
             if (mToDeletePoolKeys.Count > 0)
             {
                 foreach (var key in mToDeletePoolKeys)
-                    mPoolKeys.Remove(key);
+                    mPoolItems.Remove(key);
                 mToDeletePoolKeys.Clear();
             }
         }
@@ -151,7 +144,6 @@ namespace GameUtil
             if (!mDeleteTimes.TryGetValue(poolKey, out var deleteTime))
                 deleteTime = mDefaultDeleteTime;
             var poolItem = new CommonPoolItem<T>(deleteTime);
-            mPoolKeys.Add(poolKey);
             mPoolItems.Add(poolKey, poolItem);
             return poolItem;
         }
