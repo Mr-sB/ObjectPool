@@ -22,21 +22,23 @@ namespace GameUtil
 
         public void OnDispose()
         {
-            if(mCoroutine != null)
-                StopCoroutine(mCoroutine);
+            //使用ObjectPool.Instance开启/关闭协程，避免因为自身隐藏导致协程停止
+            if (mCoroutine != null)
+                ObjectPool.Instance.StopCoroutine(mCoroutine);
             mCoroutine = null;
         }
 
         private void DelayDisposeSelf()
         {
-            if(mCoroutine != null) return;
+            if (mCoroutine != null) return;
             if (Delay <= 0)
             {
                 ObjectPool.Instance.DisposeGameObject(gameObject);
                 return;
             }
 
-            mCoroutine = StartCoroutine(DelayDisposeSelfInternal());
+            //使用ObjectPool.Instance开启/关闭协程，避免因为自身隐藏导致协程停止
+            mCoroutine = ObjectPool.Instance.StartCoroutine(DelayDisposeSelfInternal());
         }
 
         IEnumerator DelayDisposeSelfInternal()
