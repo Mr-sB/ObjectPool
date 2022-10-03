@@ -14,7 +14,12 @@ namespace GameUtil
         {
             DelayDisposeSelf();
         }
-        
+
+        private void OnDestroy()
+        {
+            OnDispose();
+        }
+
         public void OnSpawn()
         {
             DelayDisposeSelf();
@@ -47,8 +52,8 @@ namespace GameUtil
                 yield return new WaitForSecondsRealtime(Delay);
             else
                 yield return new WaitForSeconds(Delay);
-            ObjectPool.Instance.DisposeGameObject(gameObject);
             mCoroutine = null;
+            ObjectPool.Instance.DisposeGameObject(gameObject);
         }
     }
 }
