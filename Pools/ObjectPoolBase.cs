@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace GameUtil
@@ -50,6 +51,32 @@ namespace GameUtil
             _onApplicationQuit = true;
         }
 #endif
+        #endregion
+        
+        #region Coroutine
+        public static Coroutine SafeStartCoroutine(IEnumerator routine)
+        {
+#if UNITY_EDITOR
+            if (_onApplicationQuit) return null;
+#endif
+            return Instance.StartCoroutine(routine);
+        }
+
+        public static void SafeStopCoroutine(IEnumerator routine)
+        {
+#if UNITY_EDITOR
+            if (_onApplicationQuit) return;
+#endif
+            Instance.StopCoroutine(routine);
+        }
+        
+        public static void SafeStopCoroutine(Coroutine routine)
+        {
+#if UNITY_EDITOR
+            if (_onApplicationQuit) return;
+#endif
+            Instance.StopCoroutine(routine);
+        }
         #endregion
     }
 }

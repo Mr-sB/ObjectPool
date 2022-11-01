@@ -29,7 +29,7 @@ namespace GameUtil
         {
             //使用ObjectPool.Instance开启/关闭协程，避免因为自身隐藏导致协程停止
             if (mCoroutine != null)
-                ObjectPool.Instance.StopCoroutine(mCoroutine);
+                ObjectPool.SafeStopCoroutine(mCoroutine);
             mCoroutine = null;
         }
 
@@ -43,7 +43,7 @@ namespace GameUtil
             }
 
             //使用ObjectPool.Instance开启/关闭协程，避免因为自身隐藏导致协程停止
-            mCoroutine = ObjectPool.Instance.StartCoroutine(DelayDisposeSelfInternal());
+            mCoroutine = ObjectPool.SafeStartCoroutine(DelayDisposeSelfInternal());
         }
 
         IEnumerator DelayDisposeSelfInternal()
