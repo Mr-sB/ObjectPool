@@ -17,7 +17,7 @@ namespace GameUtil
 
         private void OnDestroy()
         {
-            OnDispose();
+            StopDelayDisposeSelf();
         }
 
         public void OnSpawn()
@@ -26,6 +26,16 @@ namespace GameUtil
         }
 
         public void OnDispose()
+        {
+            StopDelayDisposeSelf();
+            //这里还需要再次销毁一下
+            //因为可能是嵌套的外部对象Dispose了，导致自己响应到OnDispose
+            //所以还需要再销毁一次确保自身被Dispose
+            //重复调用DisposeGameObject不会有错误行为
+            ObjectPool.Instance.DisposeGameObject(gameObject);
+        }
+
+        private void StopDelayDisposeSelf()
         {
             //使用ObjectPool.Instance开启/关闭协程，避免因为自身隐藏导致协程停止
             if (mCoroutine != null)
