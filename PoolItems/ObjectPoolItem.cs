@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace GameUtil
 {
@@ -257,6 +258,13 @@ namespace GameUtil
 
         private void OnGameObjectSpawn(GameObject go)
         {
+            if (go.scene.name == "DontDestroyOnLoad")
+            {
+                // DontDestroyOnLoad的对象，需要移动回当前场景
+                // 因为对象池是为了替代实例化，实例化就是在当前场景
+                // 并且对象池第一次拿对象也是在当前场景的，后续也保持一致
+                SceneManager.MoveGameObjectToScene(go, SceneManager.GetActiveScene());
+            }
             List<ISpawnHandler> spawnHandlers;
             bool needDispose;
             if (mSpawnHandlers != null && mSpawnHandlers.Count == 0)
