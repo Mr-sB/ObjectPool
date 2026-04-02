@@ -38,7 +38,38 @@ namespace GameUtil
         private readonly LinkedList<Item> mItems;
         private readonly List<ISpawnHandler> mSpawnHandlers;
         private readonly List<IDisposeHandler> mDisposeHandlers;
-        public Object OriginAsset { private set; get; } //原始资源
+        private bool mOriginAssetLoaded;
+        private Object mOriginAsset;
+        /// <summary>
+        /// 原始资源，懒加载
+        /// </summary>
+        public Object OriginAsset
+        {
+            get
+            {
+                if (!mOriginAssetLoaded)
+                {
+                    mOriginAssetLoaded = true;
+                    switch (mLoadMode)
+                    {
+                        case ObjectPool.LoadMode.Resource:
+                            mOriginAsset = Resources.Load(mAssetName, mAssetType);
+                            break;
+                        case ObjectPool.LoadMode.Custom:
+                            break;
+                        // TODO: Add yourself AssetBundle load method
+                        // case ObjectPool.LoadMode.AssetBundle:
+                        //     OriginAsset = AssetBundleManager.GetAsset(assetType, bundleName, assetName);
+                        //     break;
+                        // MARK: Add yourself load methods
+                    }
+                    // Custom pool will set origin asset after ctor.
+                    if (mLoadMode != ObjectPool.LoadMode.Custom)
+                        OnSetOriginAsset();
+                }
+                return mOriginAsset;
+            }
+        }
         public override int ItemCount => mItems.Count;
 
         public ObjectPoolItem(Type assetType, ObjectPool.LoadMode loadMode, string bundleName, string assetName, DeleteTime deleteTime) : base(deleteTime)
@@ -55,27 +86,12 @@ namespace GameUtil
                 mSpawnHandlers = new List<ISpawnHandler>();
                 mDisposeHandlers = new List<IDisposeHandler>();
             }
-            switch (mLoadMode)
-            {
-                case ObjectPool.LoadMode.Resource:
-                    OriginAsset = Resources.Load(assetName, assetType);
-                    break;
-                case ObjectPool.LoadMode.Custom:
-                    break;
-                // TODO: Add yourself AssetBundle load method
-                // case ObjectPool.LoadMode.AssetBundle:
-                //     OriginAsset = AssetBundleManager.GetAsset(assetType, bundleName, assetName);
-                //     break;
-                // MARK: Add yourself load methods
-            }
-            //Custom pool will set origin asset after ctor.
-            if (mLoadMode != ObjectPool.LoadMode.Custom)
-                OnSetOriginAsset();
         }
 
         public void SetOriginAsset(Object originAsset)
         {
-            OriginAsset = originAsset;
+            mOriginAssetLoaded = true;
+            mOriginAsset = originAsset;
             OnSetOriginAsset();
         }
         
@@ -233,7 +249,7 @@ namespace GameUtil
 //                 }
 //             }
 // #endif
-            if (!OriginAsset)
+            if (!mOriginAsset)
                 Debug.LogErrorFormat("ObjectItem load asset is null! Type: {0}, LoadMode: {1}, BundleName: {2}, AssetName: {3}", mAssetType, mLoadMode, mBundleName, mAssetName);
         }
         
